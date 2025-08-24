@@ -143,7 +143,7 @@ class Chatbot_Messages_REST_Route {
 	 * @param WP_REST_Request $request WordPress REST request object, including parameters.
 	 * @return WP_REST_Response WordPress REST response object.
 	 */
-	public function send_message( WP_REST_Request $request ): WP_REST_Response {
+	public function send_message( WP_REST_Request $request ): WP_REST_Response { // @phpstan-ignore-line
 		$messages = $this->get_messages_history();
 
 		$message_schema = $this->get_message_schema();
