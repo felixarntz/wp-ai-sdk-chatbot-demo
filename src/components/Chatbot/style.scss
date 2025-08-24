@@ -177,6 +177,43 @@
 		div + .button {
 			margin-top: 1rem;
 		}
+
+		img,
+		audio,
+		video {
+			max-width: 100%;
+			height: auto;
+		}
+	}
+
+	&__message-part {
+		margin: 1em 0;
+
+		&:first-child {
+			margin-top: 0;
+		}
+
+		&:last-child {
+			margin-bottom: 0;
+		}
+
+		h1,
+		h2,
+		h3,
+		h4,
+		h5,
+		h6 {
+
+			/*
+			* Ensure WordPress's general heading color does not override the
+			* content part text color.
+			*/
+			color: inherit;
+		}
+
+		textarea.code {
+			width: 100%;
+		}
 	}
 
 	&__message-arrow {

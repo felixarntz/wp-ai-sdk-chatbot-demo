@@ -1,9 +1,4 @@
 /**
- * External dependencies
- */
-import Markdown from 'markdown-to-jsx';
-
-/**
  * WordPress dependencies
  */
 import apiFetch from '@wordpress/api-fetch';
@@ -28,7 +23,6 @@ import './style.scss';
 import type {
 	ChatbotConfig,
 	ChatbotMessage,
-	ResponseRendererProps,
 	ServerChatbotConfig,
 } from '../../types';
 
@@ -48,54 +42,6 @@ const storeVisibility = ( isVisible: boolean ): void => {
 	} else {
 		window.sessionStorage.removeItem( 'wp-ai-sdk-chatbot-demo-visibility' );
 	}
-};
-
-/**
- * Renders the response from the chatbot.
- *
- * @since 0.1.0
- *
- * @param props - Component props.
- * @returns The rendered response.
- */
-const ResponseRenderer = ( props: ResponseRendererProps ) => {
-	const { text } = props;
-
-	const textData = useMemo( () => {
-		const parts = text.split( '---' );
-		if ( parts.length !== 3 ) {
-			return {
-				text: parts[ 0 ].trim(),
-				linkUrl: '',
-				linkText: '',
-			};
-		}
-
-		// If the response includes something after the link text, remove it.
-		const cleanLinkText = parts[ 2 ].trim().split( '\n' )[ 0 ];
-		return {
-			text: parts[ 0 ].trim(),
-			linkUrl: parts[ 1 ].trim(),
-			linkText: cleanLinkText.trim(),
-		};
-	}, [ text ] );
-
-	return (
-		<>
-			<Markdown options={ { forceBlock: true, forceWrapper: true } }>
-				{ textData.text }
-			</Markdown>
-			{ textData.linkUrl && textData.linkText && (
-				// Don't use the Button component so that we don't need to load the heavy 'wp-components' stylesheet everywhere.
-				<a
-					className="button button-secondary"
-					href={ textData.linkUrl }
-				>
-					{ textData.linkText }
-				</a>
-			) }
-		</>
-	);
 };
 
 /**
@@ -135,7 +81,6 @@ const getChatbotConfig = (
 			'How can I help you?',
 			'wp-ai-sdk-chatbot-demo'
 		),
-		ResponseRenderer,
 	};
 };
 

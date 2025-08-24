@@ -1,8 +1,3 @@
-/**
- * External dependencies
- */
-import type { ComponentType } from 'react';
-
 /*
  * Types for the chatbot itself.
  */
@@ -23,15 +18,10 @@ export type ChatbotConfig = {
 		inputPlaceholder: string;
 	};
 	initialBotMessage?: string;
-	ResponseRenderer?: ComponentType< ResponseRendererProps >;
 };
 
 export type ChatbotMessage = Message & {
 	type?: 'regular' | 'error';
-};
-
-export type ResponseRendererProps = {
-	text: string;
 };
 
 /*

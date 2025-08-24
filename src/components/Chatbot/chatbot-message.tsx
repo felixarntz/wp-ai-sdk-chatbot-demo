@@ -1,29 +1,10 @@
 /**
- * External dependencies
- */
-import Markdown from 'markdown-to-jsx';
-
-/**
  * Internal dependencies
  */
-import { useChatbotConfig } from '../../config';
 import Loader from './loader';
+import MessageParts from './message-parts';
 import UserIcon from './user-icon';
-import {
-	ChatbotMessage as ChatbotMessageType,
-	MessagePart,
-	MessageRole,
-	ResponseRendererProps,
-} from '../../types';
-
-const DefaultResponseRenderer = ( props: ResponseRendererProps ) => {
-	const { text } = props;
-	return (
-		<Markdown options={ { forceBlock: true, forceWrapper: true } }>
-			{ text }
-		</Markdown>
-	);
-};
+import { ChatbotMessage as ChatbotMessageType, MessageRole } from '../../types';
 
 type ChatbotMessageProps = {
 	/**
@@ -46,9 +27,6 @@ type ChatbotMessageProps = {
  */
 export default function ChatbotMessage( props: ChatbotMessageProps ) {
 	const { content, loading } = props;
-
-	const ResponseRenderer =
-		useChatbotConfig( 'ResponseRenderer' ) || DefaultResponseRenderer;
 
 	const classSuffix =
 		content.role === MessageRole.User ? 'user' : 'assistant';
@@ -84,14 +62,7 @@ export default function ChatbotMessage( props: ChatbotMessageProps ) {
 				<div
 					className={ `wp-ai-sdk-chatbot-demo__message wp-ai-sdk-chatbot-demo__message--${ classSuffix }${ errorClass }` }
 				>
-					{ content.parts.map( ( part: MessagePart, index ) =>
-						'text' in part && !! part.text ? (
-							<ResponseRenderer
-								key={ index }
-								text={ part.text }
-							/>
-						) : null
-					) }
+					<MessageParts parts={ content.parts } />
 					<div
 						className={ `wp-ai-sdk-chatbot-demo__message-arrow wp-ai-sdk-chatbot-demo__message-arrow--${ classSuffix }${ errorClass }` }
 					></div>
