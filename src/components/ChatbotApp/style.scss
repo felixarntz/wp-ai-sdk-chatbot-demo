@@ -1,0 +1,36 @@
+.wp-ai-sdk-chatbot-demo-container {
+	position: fixed;
+	bottom: 2rem;
+	right: 2rem;
+	z-index: 1000;
+	border-radius: 5px;
+	box-shadow: rgba(0, 0, 0, 0.1) 0 0 0 1px;
+
+	@media (min-width: 782px) {
+
+		.wp-ai-sdk-chatbot-demo__container {
+			width: 400px;
+		}
+
+		.wp-ai-sdk-chatbot-demo__message--assistant {
+			width: 309.5px;
+		}
+	}
+
+	.wp-ai-sdk-chatbot-demo__input {
+		margin: 0;
+	}
+}
+
+.components-button.button.wp-ai-sdk-chatbot-demo-button {
+	width: 72px;
+	height: 72px;
+	border-radius: 50%;
+	padding: 0;
+	margin: 0 5px 5px 0; // This is only so that the outline does not show behind the chatbot container.
+	display: flex;
+	position: fixed;
+	bottom: 2rem;
+	right: 2rem;
+	z-index: 100;
+}

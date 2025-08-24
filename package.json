@@ -1,0 +1,40 @@
+{
+	"name": "wp-ai-sdk-chatbot-demo",
+	"license": "GPL-2.0-or-later",
+	"repository": "git+https://github.com/felixarntz/wp-ai-sdk-chatbot-demo.git",
+	"keywords": [
+		"wordpress",
+		"plugin",
+		"ai",
+		"chatbot"
+	],
+	"homepage": "https://github.com/felixarntz/wp-ai-sdk-chatbot-demo/",
+	"devDependencies": {
+		"@wordpress/env": "^10.27.0",
+		"@wordpress/scripts": "^30.15.0",
+		"fast-glob": "^3.3.3",
+		"prettier": "npm:wp-prettier@^3.0.3",
+		"typescript": "^5.8.3"
+	},
+	"dependencies": {
+		"@wordpress/api-fetch": "^7.22.0",
+		"@wordpress/components": "^29.8.0",
+		"@wordpress/data": "^10.22.0",
+		"@wordpress/element": "^6.22.0",
+		"@wordpress/i18n": "^5.22.0",
+		"clsx": "^2.1.1",
+		"markdown-to-jsx": "^7.5.0"
+	},
+	"scripts": {
+		"build": "wp-scripts build && tsc --build",
+		"format-css": "wp-scripts lint-style --fix",
+		"format-js": "wp-scripts format",
+		"format-php": "wp-env run cli --env-cwd=wp-content/plugins/$(basename $(pwd)) composer format",
+		"phpstan": "wp-env run cli --env-cwd=wp-content/plugins/$(basename $(pwd)) composer phpstan",
+		"lint-css": "wp-scripts lint-style",
+		"lint-js": "wp-scripts lint-js && tsc --noEmit",
+		"lint-md": "wp-scripts lint-md-docs",
+		"lint-php": "wp-env run cli --env-cwd=wp-content/plugins/$(basename $(pwd)) composer lint",
+		"wp-env": "wp-env"
+	}
+}
