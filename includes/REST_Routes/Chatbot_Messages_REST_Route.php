@@ -11,6 +11,10 @@ namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo\REST_Routes;
 use Exception;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Agents\Chatbot_Agent;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Providers\Provider_Manager;
+use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Create_Post_Draft_Tool;
+use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Get_Post_Tool;
+use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Publish_Post_Tool;
+use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Search_Posts_Tool;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\DTO\Message;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\DTO\MessagePart;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\Enums\MessagePartChannelEnum;
@@ -143,7 +147,7 @@ class Chatbot_Messages_REST_Route {
 	 * @param WP_REST_Request $request WordPress REST request object, including parameters.
 	 * @return WP_REST_Response WordPress REST response object.
 	 */
-	public function send_message( WP_REST_Request $request ): WP_REST_Response { // @phpstan-ignore-line
+	public function send_message( WP_REST_Request $request ): WP_REST_Response { // phpcs:ignore Squiz.Functions.MultiLineFunctionDeclaration.ContentAfterBrace, @phpstan-ignore-line
 		$messages = $this->get_messages_history();
 
 		$message_schema = $this->get_message_schema();
@@ -162,7 +166,13 @@ class Chatbot_Messages_REST_Route {
 		$message_instances = $this->prepare_message_instances( $messages );
 
 		try {
-			$tools = array(); // TODO: Implement some tools.
+			// TODO: Complete featured image generation tool and add it here.
+			$tools = array(
+				new Search_Posts_Tool(),
+				new Get_Post_Tool(),
+				new Create_Post_Draft_Tool(),
+				new Publish_Post_Tool(),
+			);
 
 			$agent = new Chatbot_Agent( $this->provider_manager, $tools, $message_instances );
 			do {
