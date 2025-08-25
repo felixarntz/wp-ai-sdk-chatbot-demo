@@ -9,12 +9,13 @@
 namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Agents;
 
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Agents\Contracts\Agent;
+use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Providers\PromptBuilder;
+use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Providers\Provider_Manager;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Contracts\Tool;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\AiClient;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\DTO\Message;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\DTO\MessagePart;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\Enums\MessageRoleEnum;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\PromptBuilder;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Tools\DTO\FunctionCall;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Tools\DTO\FunctionDeclaration;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Tools\DTO\FunctionResponse;
@@ -58,6 +59,14 @@ abstract class Abstract_Agent implements Agent {
 	 * @var int
 	 */
 	private int $current_step_index = 0;
+
+	/**
+	 * Temporary provider manager to be able to create a prompt builder if AiClient is not available.
+	 *
+	 * @since 0.1.0
+	 * @var Provider_Manager|null
+	 */
+	protected ?Provider_Manager $temp_provider_manager;
 
 	/**
 	 * Constructor.
@@ -106,8 +115,17 @@ abstract class Abstract_Agent implements Agent {
 		do {
 			++$retries;
 
-			$prompt_builder = AiClient::prompt( $this->trajectory + $new_messages )
-				->usingFunctionDeclarations( $this->get_function_declarations() );
+			// TODO: Update this once AiClient is available.
+			if ( class_exists( AiClient::class ) ) {
+				$prompt_builder = AiClient::prompt( $this->trajectory + $new_messages )
+					->usingFunctionDeclarations( $this->get_function_declarations() );
+			} else {
+				if ( ! isset( $this->temp_provider_manager ) ) {
+					throw new RuntimeException( 'Provider manager is not set in the agent.' );
+				}
+				$prompt_builder = new PromptBuilder( $this->temp_provider_manager->get_registry(), $this->trajectory + $new_messages );
+				$prompt_builder = $prompt_builder->usingFunctionDeclarations( $this->get_function_declarations() );
+			}
 
 			$result_message = $this->prompt_llm( $prompt_builder );
 

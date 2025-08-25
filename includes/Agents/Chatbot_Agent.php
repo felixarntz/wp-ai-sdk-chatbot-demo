@@ -8,10 +8,10 @@
 
 namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Agents;
 
+use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Providers\PromptBuilder;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Providers\Provider_Manager;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Contracts\Tool;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\DTO\Message;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\PromptBuilder;
 
 /**
  * Class for the chatbot agent.
@@ -43,6 +43,8 @@ class Chatbot_Agent extends Abstract_Agent {
 		parent::__construct( $tools, $trajectory, $options );
 
 		$this->provider_manager = $provider_manager;
+
+		$this->temp_provider_manager = $provider_manager;
 	}
 
 	/**
