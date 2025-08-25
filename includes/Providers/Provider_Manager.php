@@ -68,7 +68,7 @@ class Provider_Manager {
 	public function get_registry(): ProviderRegistry {
 		static $registry = null;
 
-		// Eventually, this will always be the case.
+		// TODO: Update this once AiClient is available.
 		if ( class_exists( AiClient::class ) ) {
 			return AiClient::getRegistry();
 		}
@@ -144,7 +144,7 @@ class Provider_Manager {
 	public function get_preferred_model_id( string $provider_id ): string {
 		switch ( $provider_id ) {
 			case 'anthropic':
-				$model_id = 'claude-4-sonnet';
+				$model_id = 'claude-sonnet-4-20250514';
 				break;
 			case 'google':
 				$model_id = 'gemini-2.5-flash';
