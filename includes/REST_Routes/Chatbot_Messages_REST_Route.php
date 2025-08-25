@@ -192,11 +192,11 @@ class Chatbot_Messages_REST_Route {
 
 			$result_message = array(
 				'type'             => 'error',
-				Message::KEY_ROLE  => MessageRoleEnum::model(),
+				Message::KEY_ROLE  => MessageRoleEnum::model()->value,
 				Message::KEY_PARTS => array(
 					array(
-						MessagePart::KEY_CHANNEL => MessagePartChannelEnum::content(),
-						MessagePart::KEY_TYPE    => MessagePartTypeEnum::text(),
+						MessagePart::KEY_CHANNEL => MessagePartChannelEnum::content()->value,
+						MessagePart::KEY_TYPE    => MessagePartTypeEnum::text()->value,
 						MessagePart::KEY_TEXT    => $error_message,
 					),
 				),
