@@ -47,6 +47,23 @@ class Create_Post_Draft_Tool extends Abstract_Tool {
 	 * @return array<string, mixed> The parameters of the tool.
 	 */
 	protected function parameters(): array {
+		$allowed_post_tags = array(
+			'a',
+			'br',
+			'code',
+			'em',
+			'h2',
+			'h3',
+			'h4',
+			'h5',
+			'h6',
+			'li',
+			'ol',
+			'p',
+			'strong',
+			'ul',
+		);
+
 		return array(
 			'type'       => 'object',
 			'properties' => array(
@@ -56,7 +73,7 @@ class Create_Post_Draft_Tool extends Abstract_Tool {
 				),
 				'post_content' => array(
 					'type'        => 'string',
-					'description' => 'The content of the post.',
+					'description' => 'The content of the post, as HTML. Never include any class or style attributes. Allowed HTML tags are: ' . implode( ', ', $allowed_post_tags ),
 				),
 			),
 			'required'   => array( 'post_title', 'post_content' ),
@@ -93,8 +110,9 @@ class Create_Post_Draft_Tool extends Abstract_Tool {
 		}
 
 		return array(
-			'post_id' => $post_id,
-			'message' => 'Post draft created successfully.',
+			'post_id'       => $post_id,
+			'post_edit_url' => get_edit_post_link( $post_id, 'raw' ),
+			'message'       => 'Post draft created successfully.',
 		);
 	}
 }

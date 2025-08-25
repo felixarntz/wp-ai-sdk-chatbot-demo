@@ -36,7 +36,7 @@ class Get_Post_Tool extends Abstract_Tool {
 	 * @return string The description of the tool.
 	 */
 	protected function description(): string {
-		return 'Returns the title and content of a WordPress post for a given post ID.';
+		return 'Returns the title, content, and more information of a WordPress post for a given post ID.';
 	}
 
 	/**
@@ -84,9 +84,15 @@ class Get_Post_Tool extends Abstract_Tool {
 			);
 		}
 
-		return array(
-			'post_title'   => $post->post_title,
-			'post_content' => $post->post_content,
+		$result = array(
+			'post_title'    => $post->post_title,
+			'post_content'  => $post->post_content,
+			'post_status'   => $post->post_status,
+			'post_edit_url' => get_edit_post_link( $post->ID, 'raw' ),
 		);
+		if ( 'publish' === $post->post_status ) {
+			$result['post_url'] = get_permalink( $post );
+		}
+		return $result;
 	}
 }

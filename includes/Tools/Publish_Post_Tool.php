@@ -86,8 +86,10 @@ class Publish_Post_Tool extends Abstract_Tool {
 
 		if ( 'publish' === $post->post_status ) {
 			return array(
-				'post_id' => $post->ID,
-				'message' => 'Post is already published.',
+				'post_id'       => $post->ID,
+				'post_edit_url' => get_edit_post_link( $post->ID, 'raw' ),
+				'post_url'      => get_permalink( $post ),
+				'message'       => 'Post is already published.',
 			);
 		}
 
@@ -104,8 +106,10 @@ class Publish_Post_Tool extends Abstract_Tool {
 		}
 
 		return array(
-			'post_id' => $updated_post_id,
-			'message' => 'Post published successfully.',
+			'post_id'       => $updated_post_id,
+			'post_edit_url' => get_edit_post_link( $updated_post_id, 'raw' ),
+			'post_url'      => get_permalink( $updated_post_id ),
+			'message'       => 'Post published successfully.',
 		);
 	}
 }
