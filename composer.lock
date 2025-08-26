@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "68b49c3eef1bb24482982df436a6557c",
+    "content-hash": "bbfb0e1ca548c12dba7cfb6dae6fe9bf",
     "packages": [
         {
             "name": "composer/installers",
@@ -998,16 +998,16 @@
         },
         {
             "name": "wordpress/php-ai-client",
-            "version": "dev-provider-base-and-implementation",
+            "version": "dev-feature/image-generation",
             "source": {
                 "type": "git",
                 "url": "https://github.com/WordPress/php-ai-client.git",
-                "reference": "45a8d50bc37e64ae0835db52e47fae4715c86a10"
+                "reference": "4fcb9fca49597ac1cdf5c186464455ab939a4ce0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/WordPress/php-ai-client/zipball/45a8d50bc37e64ae0835db52e47fae4715c86a10",
-                "reference": "45a8d50bc37e64ae0835db52e47fae4715c86a10",
+                "url": "https://api.github.com/repos/WordPress/php-ai-client/zipball/4fcb9fca49597ac1cdf5c186464455ab939a4ce0",
+                "reference": "4fcb9fca49597ac1cdf5c186464455ab939a4ce0",
                 "shasum": ""
             },
             "require": {
@@ -1060,7 +1060,7 @@
                 "issues": "https://github.com/WordPress/php-ai-client/issues",
                 "source": "https://github.com/WordPress/php-ai-client"
             },
-            "time": "2025-08-25T02:51:23+00:00"
+            "time": "2025-08-26T07:15:06+00:00"
         }
     ],
     "packages-dev": [],

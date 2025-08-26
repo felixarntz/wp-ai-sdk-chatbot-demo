@@ -13,7 +13,7 @@
 	"require": {
 		"composer/installers": "~1.0",
 		"guzzlehttp/guzzle": "^7.10",
-		"wordpress/php-ai-client": "dev-provider-base-and-implementation",
+		"wordpress/php-ai-client": "dev-feature/image-generation",
 		"php": ">=7.4"
 	},
 	"config": {
