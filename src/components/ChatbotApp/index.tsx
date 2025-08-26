@@ -17,7 +17,6 @@ import { ESCAPE } from '@wordpress/keycodes';
  * Internal dependencies
  */
 import Chatbot from '../Chatbot';
-import BotIcon from './bot-icon';
 import { ChatbotConfigProvider } from '../../config';
 import './style.scss';
 import type {
@@ -191,10 +190,7 @@ export default function ChatbotApp( props: ChatbotAppProps ) {
 				aria-expanded={ isVisible }
 				ref={ toggleButtonRef }
 			>
-				<BotIcon size={ 72 } color="#ffffff" />
-				<span className="screen-reader-text">
-					{ __( 'Need help?', 'wp-ai-sdk-chatbot-demo' ) }
-				</span>
+				{ __( 'Need help?', 'wp-ai-sdk-chatbot-demo' ) }
 			</Button>
 		</>
 	);
