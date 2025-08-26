@@ -68,6 +68,7 @@ const getChatbotConfig = (
 							: providerName
 				  )
 				: '',
+			resetButton: __( 'Reset chat', 'wp-ai-sdk-chatbot-demo' ),
 			closeButton: __( 'Close chatbot', 'wp-ai-sdk-chatbot-demo' ),
 			sendButton: __( 'Send prompt', 'wp-ai-sdk-chatbot-demo' ),
 			inputLabel: __( 'Chatbot input', 'wp-ai-sdk-chatbot-demo' ),

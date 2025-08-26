@@ -12,6 +12,7 @@ export type ChatbotConfig = {
 	labels: {
 		title: string;
 		subtitle: string;
+		resetButton: string;
 		closeButton: string;
 		sendButton: string;
 		inputLabel: string;

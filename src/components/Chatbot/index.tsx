@@ -141,6 +141,12 @@ export default function Chatbot( props: ChatbotProps ) {
 		}
 	};
 
+	const onReset = () => {
+		if ( onUpdateMessages ) {
+			onUpdateMessages( [] );
+		}
+	};
+
 	const handleSubmit = ( event: React.FormEvent< HTMLFormElement > ) => {
 		event.preventDefault();
 
@@ -161,7 +167,11 @@ export default function Chatbot( props: ChatbotProps ) {
 			className={ clsx( 'wp-ai-sdk-chatbot-demo__container', className ) }
 		>
 			<div className="wp-ai-sdk-chatbot-demo__inner-container">
-				<ChatbotHeader onClose={ onClose } />
+				<ChatbotHeader
+					messagesRoute={ messagesRoute }
+					onReset={ onReset }
+					onClose={ onClose }
+				/>
 				<div
 					className="wp-ai-sdk-chatbot-demo__messages-container"
 					ref={ messagesContainerRef }
