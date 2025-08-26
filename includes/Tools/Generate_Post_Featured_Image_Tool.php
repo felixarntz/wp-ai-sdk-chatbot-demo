@@ -11,8 +11,12 @@ namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Providers\PromptBuilder;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\AiClient;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Files\Enums\FileTypeEnum;
+use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\DTO\Message;
+use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\DTO\MessagePart;
+use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\Enums\MessageRoleEnum;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Providers\ProviderRegistry;
 use WP_Error;
+use RuntimeException;
 
 /**
  * Tool to generate and assign a featured image for a given post.
@@ -111,6 +115,15 @@ class Generate_Post_Featured_Image_Tool extends Abstract_Tool {
 			$prompt         .= ' Post content: ' . $trimmed_content;
 		}
 
+		$prompt = array(
+			new Message(
+				MessageRoleEnum::user(),
+				array(
+					new MessagePart( $prompt ),
+				)
+			),
+		);
+
 		if ( class_exists( AiClient::class ) ) {
 			$prompt_builder = AiClient::prompt( $prompt );
 		} else {
@@ -125,7 +138,7 @@ class Generate_Post_Featured_Image_Tool extends Abstract_Tool {
 				->usingOutputFileType( FileTypeEnum::inline() )
 				->generateImageResult()
 				->toImageFile();
-			if ( $image_file->getFileType()->isInline() ) {
+			if ( ! $image_file->getFileType()->isInline() ) {
 				throw new RuntimeException( 'Generated image is not inline.' );
 			}
 		} catch ( Exception $e ) {
