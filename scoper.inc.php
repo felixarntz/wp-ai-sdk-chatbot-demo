@@ -23,6 +23,12 @@ return array(
 			->ignoreVCS( true )
 			->notName( '/LICENSE|.*\\.md|.*\\.json|.*\\.lock|.*\\.dist/' )
 			->exclude( array( 'docs', 'tests' ) )
+			->in( 'vendor/wordpress/abilities-api' ),
+		Finder::create()
+			->files()
+			->ignoreVCS( true )
+			->notName( '/LICENSE|.*\\.md|.*\\.json|.*\\.lock|.*\\.dist/' )
+			->exclude( array( 'docs', 'tests' ) )
 			->path( $other_dependencies_regex )
 			->in( 'vendor' ),
 	),
