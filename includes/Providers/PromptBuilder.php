@@ -9,6 +9,7 @@
 namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Providers;
 
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Files\Enums\FileTypeEnum;
+use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Files\Enums\MediaOrientationEnum;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\DTO\Message;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Providers\Models\Contracts\ModelInterface;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Providers\Models\DTO\ModelConfig;
@@ -193,6 +194,12 @@ class PromptBuilder {
 	private function findModelInstance( array $requiredCapabilities ): ModelInterface {
 		$requiredOptions = array();
 		foreach ( $this->modelConfig->toArray() as $option => $value ) {
+			// Manual workarounds for enum config values.
+			if ( ModelConfig::KEY_OUTPUT_FILE_TYPE === $option ) {
+				$value = FileTypeEnum::from($value);
+			} elseif ( ModelConfig::KEY_OUTPUT_MEDIA_ORIENTATION === $option ) {
+				$value = MediaOrientationEnum::from($value);
+			}
 			$requiredOptions[] = new RequiredOption( $option, $value );
 		}
 		$modelRequirements = new ModelRequirements(
