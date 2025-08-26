@@ -623,6 +623,186 @@ function register_chatbot_abilities() {
 			return current_user_can( 'read' );
 		},
 	]);
+
+	// List All Abilities
+	\wp_register_ability( 'wp-ai-sdk-chatbot-demo/list-abilities', [
+		'label' => 'List Available Abilities',
+		'description' => 'Lists all available abilities that the chatbot can perform, showing what the chatbot is capable of doing.',
+		'input_schema' => [
+			'type' => 'object',
+			'properties' => [],
+		],
+		'output_schema' => [
+			'type' => 'object',
+			'properties' => [
+				'abilities' => [
+					'type' => 'array',
+					'items' => [
+						'type' => 'object',
+						'properties' => [
+							'name' => [ 'type' => 'string' ],
+							'label' => [ 'type' => 'string' ],
+							'description' => [ 'type' => 'string' ],
+						],
+					],
+				],
+				'total_count' => [
+					'type' => 'integer',
+					'description' => 'Total number of available abilities.',
+				],
+			],
+		],
+		'execute_callback' => function( array $input ) {
+			if ( ! function_exists( 'wp_get_abilities' ) ) {
+				return new WP_Error(
+					'abilities_api_unavailable',
+					'Abilities API is not available.'
+				);
+			}
+
+			$all_abilities = wp_get_abilities();
+			$chatbot_abilities = [];
+
+			foreach ( $all_abilities as $ability ) {
+				// Only include abilities registered by this chatbot
+				if ( strpos( $ability->get_name(), 'wp-ai-sdk-chatbot-demo/' ) === 0 ) {
+					$chatbot_abilities[] = [
+						'name' => $ability->get_name(),
+						'label' => $ability->get_label(),
+						'description' => $ability->get_description(),
+					];
+				}
+			}
+
+			return [
+				'abilities' => $chatbot_abilities,
+				'total_count' => count( $chatbot_abilities ),
+			];
+		},
+		'permission_callback' => function( array $input = [] ) {
+			return current_user_can( 'read' );
+		},
+	]);
+
+	// Read Error Logs
+	\wp_register_ability( 'wp-ai-sdk-chatbot-demo/read-error-logs', [
+		'label' => 'Read WordPress Error Logs',
+		'description' => 'Reads and displays recent WordPress error log entries to help diagnose issues.',
+		'input_schema' => [
+			'type' => 'object',
+			'properties' => [
+				'lines' => [
+					'type' => 'integer',
+					'description' => 'Number of recent log lines to read (default: 50, max: 200).',
+					'minimum' => 1,
+					'maximum' => 200,
+					'default' => 50,
+				],
+			],
+		],
+		'output_schema' => [
+			'type' => 'object',
+			'properties' => [
+				'log_entries' => [
+					'type' => 'array',
+					'items' => [
+						'type' => 'string',
+					],
+					'description' => 'Array of log entries.',
+				],
+				'log_file_path' => [
+					'type' => 'string',
+					'description' => 'Path to the log file that was read.',
+				],
+				'total_lines' => [
+					'type' => 'integer',
+					'description' => 'Number of lines returned.',
+				],
+			],
+		],
+		'execute_callback' => function( array $input ) {
+			if ( ! current_user_can( 'manage_options' ) ) {
+				return new WP_Error(
+					'insufficient_capabilities',
+					'You do not have permission to read error logs.'
+				);
+			}
+
+			$lines = min( $input['lines'] ?? 50, 200 );
+			
+			// Common WordPress log file locations
+			$possible_log_files = [
+				WP_CONTENT_DIR . '/debug.log',
+				ABSPATH . 'wp-content/debug.log',
+				ABSPATH . 'debug.log',
+				ini_get( 'error_log' ),
+			];
+
+			// Find the first existing log file
+			$log_file = null;
+			foreach ( $possible_log_files as $file ) {
+				if ( $file && file_exists( $file ) && is_readable( $file ) ) {
+					$log_file = $file;
+					break;
+				}
+			}
+
+			if ( ! $log_file ) {
+				return new WP_Error(
+					'log_file_not_found',
+					'No readable error log file found. Common locations checked: ' . implode( ', ', array_filter( $possible_log_files ) )
+				);
+			}
+
+			// Read the last N lines efficiently
+			$log_entries = [];
+			$file_handle = fopen( $log_file, 'r' );
+			
+			if ( ! $file_handle ) {
+				return new WP_Error(
+					'log_file_read_error',
+					'Could not open log file for reading.'
+				);
+			}
+
+			// For large files, read from the end
+			fseek( $file_handle, 0, SEEK_END );
+			$file_size = ftell( $file_handle );
+			
+			if ( $file_size > 0 ) {
+				// Read in chunks from the end to get last N lines
+				$chunk_size = min( $file_size, 8192 );
+				$buffer = '';
+				$lines_found = 0;
+				$pos = $file_size;
+				
+				while ( $lines_found < $lines && $pos > 0 ) {
+					$read_size = min( $chunk_size, $pos );
+					$pos -= $read_size;
+					
+					fseek( $file_handle, $pos );
+					$chunk = fread( $file_handle, $read_size );
+					$buffer = $chunk . $buffer;
+					
+					$lines_found = substr_count( $buffer, "\n" );
+				}
+				
+				$all_lines = explode( "\n", $buffer );
+				$log_entries = array_slice( array_filter( $all_lines ), -$lines );
+			}
+			
+			fclose( $file_handle );
+
+			return [
+				'log_entries' => $log_entries,
+				'log_file_path' => $log_file,
+				'total_lines' => count( $log_entries ),
+			];
+		},
+		'permission_callback' => function( array $input = [] ) {
+			return current_user_can( 'manage_options' );
+		},
+	]);
 }
 
 /**
