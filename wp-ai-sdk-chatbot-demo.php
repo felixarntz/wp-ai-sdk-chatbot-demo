@@ -66,6 +66,11 @@ function wp_ai_sdk_chatbot_demo_load() /* @phpstan-ignore-line */ {
 	
 	// Bootstrap the abilities API and load abilities registration
 	add_action( 'init', function() {
+		// Bootstrap the abilities API classes and functions
+		if ( ! class_exists( 'WordPress\\AbilitiesAPI\\WP_Abilities_Registry' ) ) {
+			require_once plugin_dir_path( __FILE__ ) . 'third-party/wordpress/abilities-api/src/init.php';
+		}
+		
 		// Load the abilities API functions if they don't exist
 		if ( ! function_exists( 'wp_register_ability' ) ) {
 			require_once plugin_dir_path( __FILE__ ) . 'third-party/wordpress/abilities-api/includes/abilities-api.php';
