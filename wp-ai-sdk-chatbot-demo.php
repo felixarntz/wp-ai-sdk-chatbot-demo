@@ -64,21 +64,21 @@ function wp_ai_sdk_chatbot_demo_load() /* @phpstan-ignore-line */ {
 	
 	$instance->add_hooks();
 	
-	// Bootstrap the abilities API
+	// Bootstrap the abilities API and load abilities registration
 	add_action( 'init', function() {
 		// Load the abilities API functions if they don't exist
 		if ( ! function_exists( 'wp_register_ability' ) ) {
-			require_once plugin_dir_path( __FILE__ ) . 'vendor/wordpress/abilities-api/includes/abilities-api.php';
+			require_once plugin_dir_path( __FILE__ ) . 'third-party/wordpress/abilities-api/includes/abilities-api.php';
 		}
 		
 		// Trigger the abilities_api_init hook manually if needed
 		if ( ! did_action( 'abilities_api_init' ) ) {
 			do_action( 'abilities_api_init' );
 		}
+		
+		// Load the abilities registration after API is available
+		require_once plugin_dir_path( __FILE__ ) . 'includes/abilities.php';
 	}, 5 );
-	
-	// Load the abilities registration
-	require_once plugin_dir_path( __FILE__ ) . 'includes/abilities.php';
 }
 
 /**

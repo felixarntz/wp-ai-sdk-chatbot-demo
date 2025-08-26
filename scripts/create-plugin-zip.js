@@ -72,6 +72,10 @@ try {
     // Copy everything first, then apply excludes
     console.log('Copying plugin files...');
     execSync(`rsync -av --progress ${excludeArgs} --exclude="${tempDir}/" --exclude="${finalDir}/" . ${finalDir}/`);
+    
+    // Ensure third-party directory is fully copied (rsync might have issues with nested structure)
+    console.log('Ensuring complete third-party directory copy...');
+    execSync(`cp -r third-party ${finalDir}/`);
 
     // Ensure only included patterns are kept (remove anything not explicitly included)
     console.log('Cleaning up unnecessary files...');
