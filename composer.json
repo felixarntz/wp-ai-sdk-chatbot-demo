@@ -14,8 +14,15 @@
 		"composer/installers": "~1.0",
 		"guzzlehttp/guzzle": "^7.10",
 		"wordpress/php-ai-client": "dev-feature/image-generation",
+		"wordpress/abilities-api": "0.1.0",
 		"php": ">=7.4"
 	},
+	"repositories": [
+		{
+			"type": "path",
+			"url": "../abilities-api"
+		}
+	],
 	"config": {
 		"platform": {
 			"php": "7.4.33"

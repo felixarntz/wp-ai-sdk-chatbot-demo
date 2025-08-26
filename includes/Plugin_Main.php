@@ -47,6 +47,17 @@ class Plugin_Main {
 	}
 
 	/**
+	 * Gets the provider manager instance.
+	 *
+	 * @since 0.1.0
+	 *
+	 * @return Provider_Manager The provider manager instance.
+	 */
+	public function get_provider_manager(): Provider_Manager {
+		return $this->provider_manager;
+	}
+
+	/**
 	 * Initializes the plugin functionality by adding WordPress hooks.
 	 *
 	 * @since 0.1.0

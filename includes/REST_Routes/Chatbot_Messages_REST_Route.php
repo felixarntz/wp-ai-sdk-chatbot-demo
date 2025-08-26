@@ -10,13 +10,8 @@ namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo\REST_Routes;
 
 use Exception;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Agents\Chatbot_Agent;
+use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Managers\Ability_Manager;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Providers\Provider_Manager;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Create_Post_Draft_Tool;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Generate_Post_Featured_Image_Tool;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Get_Post_Tool;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Publish_Post_Tool;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Search_Posts_Tool;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Set_Permalink_Structure_Tool;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\DTO\Message;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\DTO\MessagePart;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\Enums\MessagePartChannelEnum;
@@ -168,17 +163,9 @@ class Chatbot_Messages_REST_Route {
 		$message_instances = $this->prepare_message_instances( $messages );
 
 		try {
-			$featured_image_generation_tool                = new Generate_Post_Featured_Image_Tool();
-			$featured_image_generation_tool->temp_registry = $this->provider_manager->get_registry();
-
-			$tools = array(
-				new Search_Posts_Tool(),
-				new Get_Post_Tool(),
-				new Create_Post_Draft_Tool(),
-				$featured_image_generation_tool,
-				new Publish_Post_Tool(),
-				new Set_Permalink_Structure_Tool(),
-			);
+			// Use Ability Manager to get tools from abilities
+			$ability_manager = new Ability_Manager();
+			$tools = $ability_manager->get_chatbot_tools();
 
 			$agent = new Chatbot_Agent( $this->provider_manager, $tools, $message_instances );
 			do {

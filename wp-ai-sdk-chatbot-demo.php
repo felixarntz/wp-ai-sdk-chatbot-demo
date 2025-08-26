@@ -57,7 +57,15 @@ function wp_ai_sdk_chatbot_demo_load() /* @phpstan-ignore-line */ {
 	// Load the plugin.
 	$class_name = 'Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Plugin_Main';
 	$instance   = new $class_name( __FILE__ );
+	
+	// Make the plugin instance available globally for abilities integration
+	global $wp_ai_sdk_chatbot_demo;
+	$wp_ai_sdk_chatbot_demo = $instance;
+	
 	$instance->add_hooks();
+	
+	// Load the abilities registration
+	require_once plugin_dir_path( __FILE__ ) . 'includes/abilities.php';
 }
 
 /**
