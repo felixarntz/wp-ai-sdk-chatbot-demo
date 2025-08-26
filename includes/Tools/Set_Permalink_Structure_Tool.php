@@ -65,7 +65,7 @@ class Set_Permalink_Structure_Tool extends Abstract_Tool {
 			'properties' => array(
 				'permalink_structure' => array(
 					'type'        => 'string',
-					'description' => 'The permalink structure to use.',
+					'description' => 'The permalink structure to use. All URL paths must end with a trailing slash. Use "disabled" to turn off pretty permalinks.',
 					'enum'        => $this->allowed_values,
 				),
 			),
