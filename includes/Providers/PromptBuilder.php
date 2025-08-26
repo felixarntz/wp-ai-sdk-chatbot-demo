@@ -8,12 +8,14 @@
 
 namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Providers;
 
+use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Files\Enums\FileTypeEnum;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\DTO\Message;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Providers\Models\Contracts\ModelInterface;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Providers\Models\DTO\ModelConfig;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Providers\Models\DTO\ModelRequirements;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Providers\Models\DTO\RequiredOption;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Providers\Models\Enums\CapabilityEnum;
+use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Providers\Models\ImageGeneration\Contracts\ImageGenerationModelInterface;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Providers\Models\TextGeneration\Contracts\TextGenerationModelInterface;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Providers\ProviderRegistry;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Results\DTO\GenerativeAiResult;
@@ -103,6 +105,19 @@ class PromptBuilder {
 	}
 
 	/**
+	 * Sets the output file type for the prompt (relevant for e.g. image generation).
+	 *
+	 * @since 0.1.0
+	 *
+	 * @param FileTypeEnum $type The file type to use.
+	 * @return $this
+	 */
+	public function usingOutputFileType( FileTypeEnum $type ): self {
+		$this->modelConfig->setOutputFileType( $type );
+		return $this;
+	}
+
+	/**
 	 * Sets the model to use for the prompt.
 	 *
 	 * @since 0.1.0
@@ -126,24 +141,7 @@ class PromptBuilder {
 	 */
 	public function generateTextResult(): GenerativeAiResult {
 		if ( null === $this->model ) {
-			$requiredOptions = array();
-			foreach ( $this->modelConfig->toArray() as $option => $value ) {
-				$requiredOptions[] = new RequiredOption( $option, $value );
-			}
-			$modelRequirements = new ModelRequirements(
-				array( CapabilityEnum::textGeneration() ),
-				$requiredOptions
-			);
-
-			$providerModelsMetadata = $this->registry->findModelsMetadataForSupport( $modelRequirements );
-			if ( ! isset( $providerModelsMetadata[0] ) ) {
-				throw new RuntimeException( 'No provider model supports the necessary model requirements.' );
-			}
-
-			$modelInstance = $this->registry->getProviderModel(
-				$providerModelsMetadata[0]->getProvider()->getId(),
-				$providerModelsMetadata[0]->getModels()[0]->getId()
-			);
+			$modelInstance = $this->findModelInstance( array( CapabilityEnum::textGeneration(), CapabilityEnum::chatHistory() ) );
 		} else {
 			$modelInstance = $this->model;
 		}
@@ -155,5 +153,61 @@ class PromptBuilder {
 
 		$modelInstance->setConfig( $this->modelConfig );
 		return $modelInstance->generateTextResult( $this->messages );
+	}
+
+	/**
+	 * Generates an image result from the prompt.
+	 *
+	 * @since 0.1.0
+	 *
+	 * @return GenerativeAiResult The image result.
+	 *
+	 * @throws RuntimeException If no suitable model is found or if the model does not support image generation.
+	 */
+	public function generateImageResult(): GenerativeAiResult {
+		if ( null === $this->model ) {
+			$modelInstance = $this->findModelInstance( array( CapabilityEnum::imageGeneration() ) );
+		} else {
+			$modelInstance = $this->model;
+		}
+
+		if ( ! ( $modelInstance instanceof ImageGenerationModelInterface ) ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
+			throw new RuntimeException( 'The model class ' . get_class( $modelInstance ) . ' does not support image generation.' );
+		}
+
+		$modelInstance->setConfig( $this->modelConfig );
+		return $modelInstance->generateImageResult( $this->messages );
+	}
+
+	/**
+	 * Finds a suitable model instance for the necessary capabilities and options.
+	 *
+	 * @since 0.1.0
+	 *
+	 * @param array<CapabilityEnum> $requiredCapabilities List of required capabilities.
+	 * @return ModelInterface The model interface to use.
+	 *
+	 * @throws RuntimeException If no suitable model is found.
+	 */
+	private function findModelInstance( array $requiredCapabilities ): ModelInterface {
+		$requiredOptions = array();
+		foreach ( $this->modelConfig->toArray() as $option => $value ) {
+			$requiredOptions[] = new RequiredOption( $option, $value );
+		}
+		$modelRequirements = new ModelRequirements(
+			$requiredCapabilities,
+			$requiredOptions
+		);
+
+		$providerModelsMetadata = $this->registry->findModelsMetadataForSupport( $modelRequirements );
+		if ( ! isset( $providerModelsMetadata[0] ) ) {
+			throw new RuntimeException( 'No provider model supports the necessary model requirements.' );
+		}
+
+		return $this->registry->getProviderModel(
+			$providerModelsMetadata[0]->getProvider()->getId(),
+			$providerModelsMetadata[0]->getModels()[0]->getId()
+		);
 	}
 }

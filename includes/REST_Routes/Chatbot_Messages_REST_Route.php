@@ -12,6 +12,7 @@ use Exception;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Agents\Chatbot_Agent;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Providers\Provider_Manager;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Create_Post_Draft_Tool;
+use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Generate_Post_Featured_Image_Tool;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Get_Post_Tool;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Publish_Post_Tool;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Search_Posts_Tool;
@@ -166,11 +167,14 @@ class Chatbot_Messages_REST_Route {
 		$message_instances = $this->prepare_message_instances( $messages );
 
 		try {
-			// TODO: Complete featured image generation tool and add it here.
+			$featured_image_generation_tool                = new Generate_Post_Featured_Image_Tool();
+			$featured_image_generation_tool->temp_registry = $this->provider_manager->get_registry();
+
 			$tools = array(
 				new Search_Posts_Tool(),
 				new Get_Post_Tool(),
 				new Create_Post_Draft_Tool(),
+				$featured_image_generation_tool,
 				new Publish_Post_Tool(),
 			);
 

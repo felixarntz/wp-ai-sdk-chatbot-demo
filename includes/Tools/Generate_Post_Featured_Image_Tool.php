@@ -8,6 +8,10 @@
 
 namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools;
 
+use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Providers\PromptBuilder;
+use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\AiClient;
+use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Files\Enums\FileTypeEnum;
+use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Providers\ProviderRegistry;
 use WP_Error;
 
 /**
@@ -16,6 +20,14 @@ use WP_Error;
  * @since 0.1.0
  */
 class Generate_Post_Featured_Image_Tool extends Abstract_Tool {
+
+	/**
+	 * Temporary registry to use if AiClient is not available.
+	 *
+	 * @since 0.1.0
+	 * @var Provider_Manager|null
+	 */
+	public ?ProviderRegistry $temp_registry = null;
 
 	/**
 	 * Returns the name of the tool.
@@ -70,6 +82,8 @@ class Generate_Post_Featured_Image_Tool extends Abstract_Tool {
 	 *
 	 * @param mixed $args The input arguments to the tool.
 	 * @return mixed|WP_Error The result of the tool execution, or a WP_Error on failure.
+	 *
+	 * @throws RuntimeException If the generated image is not an inline image (which should never happen given the config).
 	 */
 	public function execute( $args ) {
 		if ( ! current_user_can( 'edit_post', $args['post_id'] ) ) {
@@ -97,10 +111,32 @@ class Generate_Post_Featured_Image_Tool extends Abstract_Tool {
 			$prompt         .= ' Post content: ' . $trimmed_content;
 		}
 
-		// TODO: Implement the actual LLM call here.
-		// For now, assume $base64_data and $mime_type are returned.
-		$base64_data = ''; // Placeholder for base64 encoded image data.
-		$mime_type   = ''; // Placeholder for image MIME type (e.g., 'image/png', 'image/jpeg').
+		if ( class_exists( AiClient::class ) ) {
+			$prompt_builder = AiClient::prompt( $prompt );
+		} else {
+			if ( ! isset( $this->temp_registry ) ) {
+				throw new RuntimeException( 'Temporary provider registry not set.' );
+			}
+			$prompt_builder = new PromptBuilder( $this->temp_registry, $prompt );
+		}
+
+		try {
+			$image_file = $prompt_builder
+				->usingOutputFileType( FileTypeEnum::inline() )
+				->generateImageResult()
+				->toImageFile();
+			if ( $image_file->getFileType()->isInline() ) {
+				throw new RuntimeException( 'Generated image is not inline.' );
+			}
+		} catch ( Exception $e ) {
+			return new WP_Error(
+				'image_generation_failed',
+				$e->getMessage()
+			);
+		}
+
+		$base64_data = $image_file->getBase64Data();
+		$mime_type   = $image_file->getMimeType();
 
 		if ( empty( $base64_data ) || empty( $mime_type ) ) {
 			return new WP_Error(
