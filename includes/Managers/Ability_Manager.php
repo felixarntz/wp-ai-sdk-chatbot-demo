@@ -41,14 +41,8 @@ class Ability_Manager {
 	 */
 	public function get_chatbot_tools(): array {
 		$abilities = $this->get_chatbot_abilities();
-		
-		// If abilities API failed to load, fall back to the original tool classes
-		if ( empty( $abilities ) ) {
-			error_log( 'Abilities API failed, falling back to original tool classes' );
-			return $this->get_fallback_tools();
-		}
-
 		$tools = [];
+
 		foreach ( $abilities as $ability ) {
 			$tools[] = new Abilities_Tool_Adapter( $ability );
 		}
@@ -234,44 +228,5 @@ class Ability_Manager {
 		}
 		
 		return false;
-	}
-
-	/**
-	 * Fallback to original tool classes when abilities API fails.
-	 *
-	 * @since 0.1.0
-	 *
-	 * @return array<Tool> Array of original Tool objects.
-	 */
-	private function get_fallback_tools(): array {
-		$tools = [];
-
-		// Only include tools that still exist in the codebase
-		$tool_classes = [
-			'Felix_Arntz\\WP_AI_SDK_Chatbot_Demo\\Tools\\Create_Post_Draft_Tool',
-			'Felix_Arntz\\WP_AI_SDK_Chatbot_Demo\\Tools\\Get_Post_Tool',
-			'Felix_Arntz\\WP_AI_SDK_Chatbot_Demo\\Tools\\Publish_Post_Tool',
-			'Felix_Arntz\\WP_AI_SDK_Chatbot_Demo\\Tools\\Search_Posts_Tool',
-			'Felix_Arntz\\WP_AI_SDK_Chatbot_Demo\\Tools\\Set_Permalink_Structure_Tool',
-		];
-
-		foreach ( $tool_classes as $tool_class ) {
-			if ( class_exists( $tool_class ) ) {
-				$tools[] = new $tool_class();
-			}
-		}
-
-		// Special handling for Generate_Post_Featured_Image_Tool which needs registry
-		$featured_image_class = 'Felix_Arntz\\WP_AI_SDK_Chatbot_Demo\\Tools\\Generate_Post_Featured_Image_Tool';
-		if ( class_exists( $featured_image_class ) ) {
-			global $wp_ai_sdk_chatbot_demo;
-			if ( $wp_ai_sdk_chatbot_demo ) {
-				$featured_image_tool = new $featured_image_class();
-				$featured_image_tool->temp_registry = $wp_ai_sdk_chatbot_demo->get_provider_manager()->get_registry();
-				$tools[] = $featured_image_tool;
-			}
-		}
-
-		return $tools;
 	}
 }

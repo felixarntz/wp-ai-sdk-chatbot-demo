@@ -62,39 +62,53 @@ function wp_ai_sdk_chatbot_demo_load() /* @phpstan-ignore-line */ {
 	global $wp_ai_sdk_chatbot_demo;
 	$wp_ai_sdk_chatbot_demo = $instance;
 	
-	// Bootstrap abilities API immediately - needs to be available for REST API calls
-	wp_ai_sdk_chatbot_demo_bootstrap_abilities_api();
+	// Bootstrap abilities API immediately and completely
+	wp_ai_sdk_chatbot_demo_force_load_abilities();
 	
 	$instance->add_hooks();
 }
 
 /**
- * Bootstrap the abilities API for immediate use
+ * Force load abilities API completely and immediately
  */
-function wp_ai_sdk_chatbot_demo_bootstrap_abilities_api() {
-	// Bootstrap the abilities API classes and functions
+function wp_ai_sdk_chatbot_demo_force_load_abilities() {
+	$plugin_dir = plugin_dir_path( __FILE__ );
+	
+	// Force load the abilities API classes directly
+	if ( ! class_exists( 'WordPress\\AbilitiesAPI\\WP_Ability' ) ) {
+		require_once $plugin_dir . 'third-party/wordpress/abilities-api/src/WP_Ability.php';
+	}
+	
 	if ( ! class_exists( 'WordPress\\AbilitiesAPI\\WP_Abilities_Registry' ) ) {
-		require_once plugin_dir_path( __FILE__ ) . 'third-party/wordpress/abilities-api/src/init.php';
+		require_once $plugin_dir . 'third-party/wordpress/abilities-api/src/WP_Abilities_Registry.php';
 	}
 	
-	// Load the abilities API functions if they don't exist
+	// Create global aliases immediately 
+	if ( ! class_exists( 'WP_Ability' ) ) {
+		class_alias( 'WordPress\\AbilitiesAPI\\WP_Ability', 'WP_Ability' );
+	}
+	
+	if ( ! class_exists( 'WP_Abilities_Registry' ) ) {
+		class_alias( 'WordPress\\AbilitiesAPI\\WP_Abilities_Registry', 'WP_Abilities_Registry' );
+	}
+	
+	// Load functions after classes are available
 	if ( ! function_exists( 'wp_register_ability' ) ) {
-		require_once plugin_dir_path( __FILE__ ) . 'third-party/wordpress/abilities-api/includes/abilities-api.php';
+		require_once $plugin_dir . 'third-party/wordpress/abilities-api/includes/abilities-api.php';
 	}
 	
-	// Register abilities on init hook (when WordPress is ready)
-	add_action( 'init', function() {
-		// Trigger the abilities_api_init hook manually if needed
+	// Load abilities registration immediately
+	if ( ! defined( 'WP_AI_SDK_CHATBOT_DEMO_ABILITIES_LOADED' ) ) {
+		// Trigger abilities_api_init first
 		if ( ! did_action( 'abilities_api_init' ) ) {
 			do_action( 'abilities_api_init' );
 		}
 		
-		// Load the abilities registration after API is available
-		if ( ! defined( 'WP_AI_SDK_CHATBOT_DEMO_ABILITIES_LOADED' ) ) {
-			require_once plugin_dir_path( __FILE__ ) . 'includes/abilities.php';
-			define( 'WP_AI_SDK_CHATBOT_DEMO_ABILITIES_LOADED', true );
-		}
-	}, 5 );
+		require_once $plugin_dir . 'includes/abilities.php';
+		define( 'WP_AI_SDK_CHATBOT_DEMO_ABILITIES_LOADED', true );
+		
+		error_log( 'Abilities API force loaded successfully' );
+	}
 }
 
 /**
