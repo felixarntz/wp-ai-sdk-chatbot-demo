@@ -61,12 +61,19 @@ class Ability_Manager {
 	 * @return array<WP_Ability> Array of WP_Ability objects for the chatbot.
 	 */
 	public function get_chatbot_abilities(): array {
-		// Check if abilities API functions are available
-		if ( ! function_exists( 'wp_get_abilities' ) ) {
+		// Check if abilities API functions and classes are available
+		if ( ! function_exists( 'wp_get_abilities' ) || ! class_exists( 'WordPress\\AbilitiesAPI\\WP_Abilities_Registry' ) ) {
 			return [];
 		}
 
-		$all_abilities = wp_get_abilities();
+		// Defensive check to ensure the registry is properly initialized
+		try {
+			$all_abilities = wp_get_abilities();
+		} catch ( Error $e ) {
+			// If there's still a class loading error, return empty array
+			return [];
+		}
+		
 		$chatbot_abilities = [];
 
 		foreach ( $all_abilities as $ability ) {

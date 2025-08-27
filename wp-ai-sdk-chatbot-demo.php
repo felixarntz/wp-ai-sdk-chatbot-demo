@@ -62,27 +62,38 @@ function wp_ai_sdk_chatbot_demo_load() /* @phpstan-ignore-line */ {
 	global $wp_ai_sdk_chatbot_demo;
 	$wp_ai_sdk_chatbot_demo = $instance;
 	
-	$instance->add_hooks();
+	// Bootstrap abilities API immediately - needs to be available for REST API calls
+	wp_ai_sdk_chatbot_demo_bootstrap_abilities_api();
 	
-	// Bootstrap the abilities API and load abilities registration
+	$instance->add_hooks();
+}
+
+/**
+ * Bootstrap the abilities API for immediate use
+ */
+function wp_ai_sdk_chatbot_demo_bootstrap_abilities_api() {
+	// Bootstrap the abilities API classes and functions
+	if ( ! class_exists( 'WordPress\\AbilitiesAPI\\WP_Abilities_Registry' ) ) {
+		require_once plugin_dir_path( __FILE__ ) . 'third-party/wordpress/abilities-api/src/init.php';
+	}
+	
+	// Load the abilities API functions if they don't exist
+	if ( ! function_exists( 'wp_register_ability' ) ) {
+		require_once plugin_dir_path( __FILE__ ) . 'third-party/wordpress/abilities-api/includes/abilities-api.php';
+	}
+	
+	// Register abilities on init hook (when WordPress is ready)
 	add_action( 'init', function() {
-		// Bootstrap the abilities API classes and functions
-		if ( ! class_exists( 'WordPress\\AbilitiesAPI\\WP_Abilities_Registry' ) ) {
-			require_once plugin_dir_path( __FILE__ ) . 'third-party/wordpress/abilities-api/src/init.php';
-		}
-		
-		// Load the abilities API functions if they don't exist
-		if ( ! function_exists( 'wp_register_ability' ) ) {
-			require_once plugin_dir_path( __FILE__ ) . 'third-party/wordpress/abilities-api/includes/abilities-api.php';
-		}
-		
 		// Trigger the abilities_api_init hook manually if needed
 		if ( ! did_action( 'abilities_api_init' ) ) {
 			do_action( 'abilities_api_init' );
 		}
 		
 		// Load the abilities registration after API is available
-		require_once plugin_dir_path( __FILE__ ) . 'includes/abilities.php';
+		if ( ! defined( 'WP_AI_SDK_CHATBOT_DEMO_ABILITIES_LOADED' ) ) {
+			require_once plugin_dir_path( __FILE__ ) . 'includes/abilities.php';
+			define( 'WP_AI_SDK_CHATBOT_DEMO_ABILITIES_LOADED', true );
+		}
 	}, 5 );
 }
 
