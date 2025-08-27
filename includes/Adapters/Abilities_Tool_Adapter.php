@@ -90,6 +90,7 @@ class Abilities_Tool_Adapter implements Tool {
 			return [
 				'type' => 'object',
 				'properties' => [],
+				'additionalProperties' => false,
 			];
 		}
 

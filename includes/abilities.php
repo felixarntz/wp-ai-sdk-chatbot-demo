@@ -553,6 +553,7 @@ function register_chatbot_abilities() {
 		'input_schema' => [
 			'type' => 'object',
 			'properties' => [],
+			'additionalProperties' => false,
 		],
 		'output_schema' => [
 			'type' => 'object',
@@ -631,6 +632,7 @@ function register_chatbot_abilities() {
 		'input_schema' => [
 			'type' => 'object',
 			'properties' => [],
+			'additionalProperties' => false,
 		],
 		'output_schema' => [
 			'type' => 'object',
