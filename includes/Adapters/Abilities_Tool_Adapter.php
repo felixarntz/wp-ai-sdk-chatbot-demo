@@ -59,7 +59,12 @@ class Abilities_Tool_Adapter implements Tool {
 		$function_name = isset( $name_parts[1] ) ? $name_parts[1] : $ability_name;
 		
 		// Convert kebab-case to snake_case for function naming convention
-		return str_replace( '-', '_', $function_name );
+		$converted_name = str_replace( '-', '_', $function_name );
+		
+		// Debug log to see what's happening (remove in production)
+		error_log( "Ability name conversion: {$ability_name} -> {$function_name} -> {$converted_name}" );
+		
+		return $converted_name;
 	}
 
 	/**
@@ -87,15 +92,18 @@ class Abilities_Tool_Adapter implements Tool {
 		
 		// If the ability has no input schema, return empty parameters
 		if ( empty( $input_schema ) ) {
-			return [
+			$fallback_schema = [
 				'type' => 'object',
 				'properties' => [],
 				'additionalProperties' => false,
 			];
+			error_log( "Using fallback schema for {$this->ability->get_name()}: " . json_encode( $fallback_schema ) );
+			return $fallback_schema;
 		}
 
 		// The input schema from abilities API should already be in the correct JSON Schema format
 		// that the PHP AI Client SDK expects for FunctionDeclaration parameters
+		error_log( "Using ability schema for {$this->ability->get_name()}: " . json_encode( $input_schema ) );
 		return $input_schema;
 	}
 
