@@ -62,3 +62,9 @@ temp/
 .Trashes
 .svn
 .env
+
+############
+## Plugin Zip
+############
+
+*.zip

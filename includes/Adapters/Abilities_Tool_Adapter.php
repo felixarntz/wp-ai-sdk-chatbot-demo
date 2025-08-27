@@ -8,9 +8,20 @@
 
 namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Adapters;
 
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Contracts\Tool;
 use WP_Ability;
 use WP_Error;
+
+/**
+ * Interface for a tool that can be used by the chatbot.
+ *
+ * @since 0.1.0
+ */
+interface Tool {
+	public function get_name(): string;
+	public function get_description(): string;
+	public function get_parameters(): ?array;
+	public function execute( $args );
+}
 
 /**
  * Adapter that converts WordPress Abilities API abilities into Tool interface objects.
@@ -87,18 +98,15 @@ class Abilities_Tool_Adapter implements Tool {
 	 *
 	 * @return array<string, mixed> The parameters of the tool.
 	 */
-	public function get_parameters(): array {
+	public function get_parameters(): ?array {
 		$input_schema = $this->ability->get_input_schema();
 		
-		// If the ability has no input schema, return empty parameters
-		if ( empty( $input_schema ) ) {
-			$fallback_schema = [
-				'type' => 'object',
-				'properties' => [],
-				'additionalProperties' => false,
-			];
-			error_log( "Using fallback schema for {$this->ability->get_name()}: " . json_encode( $fallback_schema ) );
-			return $fallback_schema;
+		// If the ability has no input schema or empty properties, return null
+		// This tells FunctionDeclaration to omit the parameters key entirely
+		if ( empty( $input_schema ) || 
+		     ( isset( $input_schema['properties'] ) && empty( $input_schema['properties'] ) ) ) {
+			error_log( "No parameters for {$this->ability->get_name()}, returning null" );
+			return null;
 		}
 
 		// The input schema from abilities API should already be in the correct JSON Schema format

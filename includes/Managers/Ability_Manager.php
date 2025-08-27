@@ -9,7 +9,7 @@
 namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Managers;
 
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Adapters\Abilities_Tool_Adapter;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Contracts\Tool;
+use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Adapters\Tool;
 use WP_Ability;
 
 /**

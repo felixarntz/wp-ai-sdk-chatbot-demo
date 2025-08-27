@@ -11,7 +11,7 @@ namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Agents;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Agents\Contracts\Agent;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Providers\PromptBuilder;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Providers\Provider_Manager;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Contracts\Tool;
+use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Adapters\Tool;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\AiClient;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\DTO\Message;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\DTO\MessagePart;
@@ -310,13 +310,20 @@ abstract class Abstract_Agent implements Agent {
 	private function extract_function_call_tools( Message $result_message ): array {
 		$function_call_tools         = array();
 		$invalid_function_call_names = array();
-		foreach ( $result_message->getParts() as $message_part ) {
+		
+		error_log( "Processing message with " . count( $result_message->getParts() ) . " parts" );
+		
+		foreach ( $result_message->getParts() as $index => $message_part ) {
+			error_log( "Part $index type: " . $message_part->getType()->getValue() );
+			
 			if ( $message_part->getType()->isFunctionCall() ) {
 				$function_call = $message_part->getFunctionCall();
+				error_log( "Function call found: " . $function_call->getName() );
 
 				$found_tool = $this->find_tool_by_name( $function_call->getName() );
 				if ( null === $found_tool ) {
 					$invalid_function_call_names[] = $function_call->getName();
+					error_log( "Tool not found: " . $function_call->getName() );
 					continue;
 				}
 
@@ -324,9 +331,11 @@ abstract class Abstract_Agent implements Agent {
 					'call' => $function_call,
 					'tool' => $found_tool,
 				);
+				error_log( "Valid function call added: " . $function_call->getName() );
 			}
 		}
 
+		error_log( "Final result: " . count( $function_call_tools ) . " valid calls, " . count( $invalid_function_call_names ) . " invalid calls" );
 		return array( $function_call_tools, $invalid_function_call_names );
 	}
 }
