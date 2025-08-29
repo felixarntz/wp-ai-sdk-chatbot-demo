@@ -2,6 +2,10 @@
 
 Implements a basic AI chatbot demo using the [PHP AI Client SDK](https://github.com/WordPress/php-ai-client).
 
+## Demo screencast
+
+[![Watch the chatbot demo screencast on YouTube](https://i3.ytimg.com/vi/LX1kAR4Js98/maxresdefault.jpg)](https://youtu.be/LX1kAR4Js98)
+
 ## Getting Started
 
 You need Composer, NodeJS, and Docker installed on your system.
