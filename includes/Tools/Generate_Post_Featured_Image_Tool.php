@@ -8,7 +8,6 @@
 
 namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools;
 
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Providers\PromptBuilder;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\AiClient;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Files\Enums\FileTypeEnum;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\DTO\Message;
@@ -124,18 +123,9 @@ class Generate_Post_Featured_Image_Tool extends Abstract_Tool {
 			),
 		);
 
-		if ( class_exists( AiClient::class ) ) {
-			$prompt_builder = AiClient::prompt( $prompt );
-		} else {
-			if ( ! isset( $this->temp_registry ) ) {
-				throw new RuntimeException( 'Temporary provider registry not set.' );
-			}
-			$prompt_builder = new PromptBuilder( $this->temp_registry, $prompt );
-		}
-
 		try {
-			$image_file = $prompt_builder
-				->usingOutputFileType( FileTypeEnum::inline() )
+			$image_file = AiClient::prompt( $prompt )
+				->asOutputFileType( FileTypeEnum::inline() )
 				->generateImageResult()
 				->toImageFile();
 			if ( ! $image_file->getFileType()->isInline() ) {

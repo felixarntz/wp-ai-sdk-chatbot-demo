@@ -168,8 +168,7 @@ class Chatbot_Messages_REST_Route {
 		$message_instances = $this->prepare_message_instances( $messages );
 
 		try {
-			$featured_image_generation_tool                = new Generate_Post_Featured_Image_Tool();
-			$featured_image_generation_tool->temp_registry = $this->provider_manager->get_registry();
+			$featured_image_generation_tool = new Generate_Post_Featured_Image_Tool();
 
 			$tools = array(
 				new Search_Posts_Tool(),

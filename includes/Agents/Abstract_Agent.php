@@ -9,10 +9,10 @@
 namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Agents;
 
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Agents\Contracts\Agent;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Providers\PromptBuilder;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Providers\Provider_Manager;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Contracts\Tool;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\AiClient;
+use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Builders\PromptBuilder;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\DTO\Message;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\DTO\MessagePart;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\Enums\MessageRoleEnum;
@@ -115,17 +115,8 @@ abstract class Abstract_Agent implements Agent {
 		do {
 			++$retries;
 
-			// TODO: Update this once AiClient is available.
-			if ( class_exists( AiClient::class ) ) {
-				$prompt_builder = AiClient::prompt( $this->trajectory + $new_messages )
-					->usingFunctionDeclarations( $this->get_function_declarations() );
-			} else {
-				if ( ! isset( $this->temp_provider_manager ) ) {
-					throw new RuntimeException( 'Provider manager is not set in the agent.' );
-				}
-				$prompt_builder = new PromptBuilder( $this->temp_provider_manager->get_registry(), $this->trajectory + $new_messages );
-				$prompt_builder = $prompt_builder->usingFunctionDeclarations( $this->get_function_declarations() );
-			}
+			$prompt_builder = AiClient::prompt( $this->trajectory + $new_messages )
+				->usingFunctionDeclarations( ...$this->get_function_declarations() );
 
 			$result_message = $this->prompt_llm( $prompt_builder );
 

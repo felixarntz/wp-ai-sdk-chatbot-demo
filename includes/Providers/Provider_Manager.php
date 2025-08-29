@@ -57,35 +57,6 @@ class Provider_Manager {
 	}
 
 	/**
-	 * Gets the PHP AI Client SDK provider registry.
-	 *
-	 * This temporarily supports a custom registry as long as the AiClient class is still being developed.
-	 *
-	 * @since 0.1.0
-	 *
-	 * @return ProviderRegistry The provider registry instance.
-	 */
-	public function get_registry(): ProviderRegistry {
-		static $registry = null;
-
-		// TODO: Update this once AiClient is available.
-		if ( class_exists( AiClient::class ) ) {
-			return AiClient::getRegistry();
-		}
-
-		// Manual workaround.
-		if ( null === $registry ) {
-			$registry = new ProviderRegistry();
-			$registry->setHttpTransporter( HttpTransporterFactory::createTransporter() );
-			$registry->registerProvider( AnthropicProvider::class );
-			$registry->registerProvider( GoogleProvider::class );
-			$registry->registerProvider( OpenAiProvider::class );
-		}
-
-		return $registry;
-	}
-
-	/**
 	 * Gets the available provider IDs.
 	 *
 	 * Only providers for which valid API credentials are set are considered available.
@@ -99,7 +70,7 @@ class Provider_Manager {
 			return $this->available_provider_ids;
 		}
 
-		$registry = $this->get_registry();
+		$registry = AiClient::defaultRegistry();
 
 		$this->available_provider_ids = array_values(
 			array_filter(
@@ -177,7 +148,7 @@ class Provider_Manager {
 	 * @return ProviderMetadata The provider metadata.
 	 */
 	public function get_provider_metadata( string $provider_id ): ProviderMetadata {
-		$provider_class_name = $this->get_registry()->getProviderClassName( $provider_id );
+		$provider_class_name = AiClient::defaultRegistry()->getProviderClassName( $provider_id );
 		return $provider_class_name::metadata();
 	}
 
@@ -191,7 +162,7 @@ class Provider_Manager {
 	 * @return ModelMetadata The model metadata.
 	 */
 	public function get_model_metadata( string $provider_id, string $model_id ): ModelMetadata {
-		$model_instance = $this->get_registry()->getProviderModel( $provider_id, $model_id );
+		$model_instance = AiClient::defaultRegistry()->getProviderModel( $provider_id, $model_id );
 		return $model_instance->metadata();
 	}
 
@@ -229,7 +200,7 @@ class Provider_Manager {
 			return;
 		}
 
-		$registry = $this->get_registry();
+		$registry = AiClient::defaultRegistry();
 		foreach ( $current_credentials as $provider_id => $api_key ) {
 			if ( '' === $api_key ) {
 				continue;
@@ -313,7 +284,7 @@ class Provider_Manager {
 			'wpaisdk-chatbot-demo-settings'
 		);
 
-		$registry = $this->get_registry();
+		$registry = AiClient::defaultRegistry();
 		foreach ( $this->provider_ids as $provider_id ) {
 			$field_id            = "provider-api-key-{$provider_id}";
 			$provider_class_name = $registry->getProviderClassName( $provider_id );
