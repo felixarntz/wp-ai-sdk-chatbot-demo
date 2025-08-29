@@ -89,6 +89,9 @@ function wp_ai_sdk_chatbot_demo_register_autoloader() {
 		$third_party_instance = new $class_name( 'Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies', $third_party_autoload_file );
 		spl_autoload_register( array( $third_party_instance, 'autoload' ), true, true );
 
+		// Manually load the WordPress Abilities API.
+		require_once plugin_dir_path( __FILE__ ) . 'third-party/wordpress/abilities-api/includes/bootstrap.php';
+
 		$registered = true;
 		return true;
 	}
