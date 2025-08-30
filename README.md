@@ -1,6 +1,6 @@
 # WP AI SDK Chatbot Demo
 
-Implements a basic AI chatbot demo using the [PHP AI Client SDK](https://github.com/WordPress/php-ai-client).
+Implements a basic AI chatbot demo using the [PHP AI Client SDK](https://github.com/WordPress/php-ai-client) and the [WordPress Abilities API](https://github.com/WordPress/abilities-api).
 
 ## Demo screencast
 
