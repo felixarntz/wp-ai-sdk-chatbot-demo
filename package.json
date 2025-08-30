@@ -17,6 +17,7 @@
 		"typescript": "^5.8.3"
 	},
 	"dependencies": {
+		"@automattic/agenttic-ui": "^0.1.9",
 		"@wordpress/api-fetch": "^7.22.0",
 		"@wordpress/components": "^29.8.0",
 		"@wordpress/data": "^10.22.0",

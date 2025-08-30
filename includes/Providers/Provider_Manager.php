@@ -176,7 +176,7 @@ class Provider_Manager {
 	 */
 	public function initialize_provider_credentials(): void {
 		register_setting(
-			'wpaisdk-chatbot-demo-settings',
+			'ai-settings',
 			self::OPTION_PROVIDER_CREDENTIALS,
 			array(
 				'type'              => 'object',
@@ -219,7 +219,7 @@ class Provider_Manager {
 	 */
 	public function initialize_current_provider(): void {
 		register_setting(
-			'wpaisdk-chatbot-demo-settings',
+			'ai-settings',
 			self::OPTION_CURRENT_PROVIDER,
 			array(
 				'type'              => 'string',
@@ -248,10 +248,10 @@ class Provider_Manager {
 	 */
 	public function add_settings_screen(): void {
 		$hook_suffix = add_options_page(
-			__( 'AI SDK Chatbot Demo Settings', 'wp-ai-sdk-chatbot-demo' ),
-			__( 'AI SDK Chatbot Demo', 'wp-ai-sdk-chatbot-demo' ),
+			__( 'AI Settings', 'wp-ai-sdk-chatbot-demo' ),
+			__( 'AI', 'wp-ai-sdk-chatbot-demo' ),
 			'manage_options',
-			'wpaisdk-chatbot-demo-settings',
+			'ai',
 			array( $this, 'render_settings_screen' )
 		);
 
@@ -273,15 +273,15 @@ class Provider_Manager {
 	public function initialize_settings_screen(): void {
 		add_settings_section(
 			'provider-credentials',
-			__( 'Credentials', 'wp-ai-sdk-chatbot-demo' ),
+			__( 'API Credentials', 'wp-ai-sdk-chatbot-demo' ),
 			static function () {
 				?>
 				<p class="description">
-					<?php esc_html_e( 'Paste your API credentials for the different providers you would like to use here.', 'wp-ai-sdk-chatbot-demo' ); ?>
+					<?php esc_html_e( 'Configure API credentials for AI providers. Only providers with valid credentials will be available for use.', 'wp-ai-sdk-chatbot-demo' ); ?>
 				</p>
 				<?php
 			},
-			'wpaisdk-chatbot-demo-settings'
+			'ai-settings'
 		);
 
 		$registry = AiClient::defaultRegistry();
@@ -292,7 +292,7 @@ class Provider_Manager {
 				$field_id,
 				$provider_class_name::metadata()->getName(),
 				array( $this, 'render_settings_field' ),
-				'wpaisdk-chatbot-demo-settings',
+				'ai-settings',
 				'provider-credentials',
 				array(
 					'type'      => 'password',
@@ -309,11 +309,11 @@ class Provider_Manager {
 			static function () {
 				?>
 				<p class="description">
-					<?php esc_html_e( 'Choose the provider you would like to use for the chatbot demo. Only providers with valid API credentials can be selected.', 'wp-ai-sdk-chatbot-demo' ); ?>
+					<?php esc_html_e( 'Choose the default AI provider. Only providers with valid API credentials can be selected.', 'wp-ai-sdk-chatbot-demo' ); ?>
 				</p>
 				<?php
 			},
-			'wpaisdk-chatbot-demo-settings'
+			'ai-settings'
 		);
 
 		$current_provider_choices = array();
@@ -324,9 +324,9 @@ class Provider_Manager {
 
 		add_settings_field(
 			'current-provider',
-			__( 'Current Provider', 'wp-ai-sdk-chatbot-demo' ),
+			__( 'Default Provider', 'wp-ai-sdk-chatbot-demo' ),
 			array( $this, 'render_settings_field' ),
-			'wpaisdk-chatbot-demo-settings',
+			'ai-settings',
 			'provider-preferences',
 			array(
 				'type'      => 'select',
@@ -347,12 +347,12 @@ class Provider_Manager {
 		?>
 		<div class="wrap">
 			<h1>
-				<?php esc_html_e( 'AI SDK Chatbot Demo Settings', 'wp-ai-sdk-chatbot-demo' ); ?>
+				<?php esc_html_e( 'AI Settings', 'wp-ai-sdk-chatbot-demo' ); ?>
 			</h1>
 
 			<form action="options.php" method="post">
-				<?php settings_fields( 'wpaisdk-chatbot-demo-settings' ); ?>
-				<?php do_settings_sections( 'wpaisdk-chatbot-demo-settings' ); ?>
+				<?php settings_fields( 'ai-settings' ); ?>
+				<?php do_settings_sections( 'ai-settings' ); ?>
 				<?php submit_button(); ?>
 			</form>
 		</div>

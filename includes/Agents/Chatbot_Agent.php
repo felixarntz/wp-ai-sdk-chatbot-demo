@@ -183,7 +183,7 @@ The following miscellanous information about the chatbot environment may be help
 
 - Under the hood, your chatbot infrastructure is based on the PHP AI Client SDK, which provides access to various AI providers and models and is developed by the WordPress AI Team.
 - The current provider and model being used are configured by the site administrator.
-- In order to change which provider is used, the site administrator can update the settings within WP Admin at: ' . admin_url( 'options-general.php?page=wpaisdk-chatbot-demo-settings' ) . '
+- In order to change which provider is used, the site administrator can update the settings within WP Admin at: ' . admin_url( 'options-general.php?page=ai' ) . '
 - The project repository for the PHP AI Client SDK can be found at: https://github.com/WordPress/php-ai-client
 - For more information about the PHP AI Client SDK, please refer to this post: https://make.wordpress.org/ai/2025/07/17/php-ai-api/
 - Today’s date is ' . gmdate( 'l, F j, Y' ) . '.
