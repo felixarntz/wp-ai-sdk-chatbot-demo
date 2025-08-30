@@ -7,6 +7,7 @@
 
 use Symfony\Component\Finder\Finder;
 
+// phpcs:ignore WordPress.WP.CapitalPDangit.MisspelledInText
 $dependencies_regex = '/^(wordpress|guzzlehttp|php-http|psr)\/[a-z0-9-]+\/(includes|src)\//';
 
 return array(
@@ -20,5 +21,5 @@ return array(
 			->path( $dependencies_regex )
 			->in( 'vendor' ),
 	),
-	'exclude-files' => array( 'polyfills.php' ),
+	'exclude-classes' => array( '/^(WP_Error)$/' ),
 );

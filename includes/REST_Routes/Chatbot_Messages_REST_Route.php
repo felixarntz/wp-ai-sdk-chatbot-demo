@@ -11,12 +11,6 @@ namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo\REST_Routes;
 use Exception;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Agents\Chatbot_Agent;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Providers\Provider_Manager;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Create_Post_Draft_Tool;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Generate_Post_Featured_Image_Tool;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Get_Post_Tool;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Publish_Post_Tool;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Search_Posts_Tool;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Set_Permalink_Structure_Tool;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\DTO\Message;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\DTO\MessagePart;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\Enums\MessagePartChannelEnum;
@@ -26,6 +20,8 @@ use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
+
+use function Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\wp_get_ability;
 
 /**
  * Class for the chatbot messages REST API routes.
@@ -168,18 +164,20 @@ class Chatbot_Messages_REST_Route {
 		$message_instances = $this->prepare_message_instances( $messages );
 
 		try {
-			$featured_image_generation_tool = new Generate_Post_Featured_Image_Tool();
-
-			$tools = array(
-				new Search_Posts_Tool(),
-				new Get_Post_Tool(),
-				new Create_Post_Draft_Tool(),
-				$featured_image_generation_tool,
-				new Publish_Post_Tool(),
-				new Set_Permalink_Structure_Tool(),
+			$abilities = array_values(
+				array_filter(
+					array(
+						wp_get_ability( 'wp-ai-sdk-chatbot-demo/get-post' ),
+						wp_get_ability( 'wp-ai-sdk-chatbot-demo/create-post-draft' ),
+						wp_get_ability( 'wp-ai-sdk-chatbot-demo/generate-post-featured-image' ),
+						wp_get_ability( 'wp-ai-sdk-chatbot-demo/publish-post' ),
+						wp_get_ability( 'wp-ai-sdk-chatbot-demo/search-posts' ),
+						wp_get_ability( 'wp-ai-sdk-chatbot-demo/set-permalink-structure' ),
+					)
+				)
 			);
 
-			$agent = new Chatbot_Agent( $this->provider_manager, $tools, $message_instances );
+			$agent = new Chatbot_Agent( $this->provider_manager, $abilities, $message_instances );
 			do {
 				$agent_result = $agent->step();
 			} while ( ! $agent_result->finished() );
