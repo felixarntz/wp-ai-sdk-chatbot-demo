@@ -21,5 +21,5 @@ return array(
 			->path( $dependencies_regex )
 			->in( 'vendor' ),
 	),
-	'exclude-classes' => array( '/^(WP_Error)$/' ),
+	'exclude-classes' => array( '/^(WP_Error|WP_Ability)$/' ),
 );

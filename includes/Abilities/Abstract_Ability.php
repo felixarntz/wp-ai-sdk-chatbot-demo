@@ -8,8 +8,8 @@
 
 namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Abilities;
 
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WP_Ability;
 use InvalidArgumentException;
+use WP_Ability;
 use WP_Error;
 
 /**

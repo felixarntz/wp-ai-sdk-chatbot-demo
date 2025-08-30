@@ -17,8 +17,8 @@ use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Tools\DTO\FunctionCall;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Tools\DTO\FunctionDeclaration;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Tools\DTO\FunctionResponse;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WP_Ability;
 use RuntimeException;
+use WP_Ability;
 
 /**
  * Base class for an agent.

@@ -12,7 +12,7 @@ use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Providers\Provider_Manager;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\AiClient;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Builders\PromptBuilder;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\DTO\Message;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WP_Ability;
+use WP_Ability;
 
 /**
  * Class for the chatbot agent.
