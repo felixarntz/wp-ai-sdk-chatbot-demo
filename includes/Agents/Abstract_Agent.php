@@ -288,7 +288,11 @@ abstract class Abstract_Agent implements Agent {
 	 * @return string The sanitized function name.
 	 */
 	private function sanitize_function_name( string $name ): string {
-		return str_replace( array( '/', '-' ), '_', $name );
+		// If the name contains a namespace (e.g. "namespace/name"), use only the part after the slash.
+		if ( str_contains( $name, '/' ) ) {
+			$name = explode( '/', $name )[1];
+		}
+		return str_replace( '-', '_', $name );
 	}
 
 	/**
