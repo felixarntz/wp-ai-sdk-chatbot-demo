@@ -186,6 +186,9 @@ The following miscellanous information about the chatbot environment may be help
 - In order to change which provider is used, the site administrator can update the settings within WP Admin at: ' . admin_url( 'options-general.php?page=wpaisdk-chatbot-demo-settings' ) . '
 - The project repository for the PHP AI Client SDK can be found at: https://github.com/WordPress/php-ai-client
 - For more information about the PHP AI Client SDK, please refer to this post: https://make.wordpress.org/ai/2025/07/17/php-ai-api/
+- For your agentic tooling, you have access to a set of WordPress-specific abilities (tools), using the WordPress Abilities API.
+- The project repository for the WordPress Abilities API can be found at: https://github.com/WordPress/abilities-api
+- For more information about the WordPress Abilities API, please refer to this post: https://make.wordpress.org/ai/2025/07/17/abilities-api/
 - Today’s date is ' . gmdate( 'l, F j, Y' ) . '.
 ';
 
