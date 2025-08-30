@@ -11,8 +11,8 @@ use Symfony\Component\Finder\Finder;
 $dependencies_regex = '/^(wordpress|guzzlehttp|php-http|psr)\/[a-z0-9-]+\/(includes|src)\//';
 
 return array(
-	'prefix'        => 'Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies',
-	'finders'       => array(
+	'prefix'          => 'Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies',
+	'finders'         => array(
 		Finder::create()
 			->files()
 			->ignoreVCS( true )

@@ -29,7 +29,7 @@ abstract class Abstract_Ability extends WP_Ability {
 	 *
 	 * @throws InvalidArgumentException Thrown if the label property is missing or invalid.
 	 */
-	public function __construct(string $name, array $properties = array()) {
+	public function __construct( string $name, array $properties = array() ) {
 		if ( ! isset( $properties['label'] ) || ! is_string( $properties['label'] ) ) {
 			throw new InvalidArgumentException( 'The "label" property is required and must be a string.' );
 		}
