@@ -9,10 +9,10 @@
 namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Agents;
 
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Providers\Provider_Manager;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Contracts\Tool;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\AiClient;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Builders\PromptBuilder;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\DTO\Message;
+use WP_Ability;
 
 /**
  * Class for the chatbot agent.
@@ -35,13 +35,13 @@ class Chatbot_Agent extends Abstract_Agent {
 	 * @since 0.1.0
 	 *
 	 * @param Provider_Manager     $provider_manager The provider manager instance.
-	 * @param array<Tool>          $tools            The tools available to the agent.
+	 * @param array<WP_Ability>    $abilities        The abilities available to the agent.
 	 * @param array<Message>       $trajectory       The initial trajectory of messages. Must contain at least the
 	 *                                               first message.
 	 * @param array<string, mixed> $options          Additional options for the agent.
 	 */
-	public function __construct( Provider_Manager $provider_manager, array $tools, array $trajectory, array $options = array() ) {
-		parent::__construct( $tools, $trajectory, $options );
+	public function __construct( Provider_Manager $provider_manager, array $abilities, array $trajectory, array $options = array() ) {
+		parent::__construct( $abilities, $trajectory, $options );
 
 		$this->provider_manager = $provider_manager;
 	}
@@ -186,6 +186,9 @@ The following miscellanous information about the chatbot environment may be help
 - In order to change which provider is used, the site administrator can update the settings within WP Admin at: ' . admin_url( 'options-general.php?page=ai' ) . '
 - The project repository for the PHP AI Client SDK can be found at: https://github.com/WordPress/php-ai-client
 - For more information about the PHP AI Client SDK, please refer to this post: https://make.wordpress.org/ai/2025/07/17/php-ai-api/
+- For your agentic tooling, you have access to a set of WordPress-specific abilities (tools), using the WordPress Abilities API.
+- The project repository for the WordPress Abilities API can be found at: https://github.com/WordPress/abilities-api
+- For more information about the WordPress Abilities API, please refer to this post: https://make.wordpress.org/ai/2025/07/17/abilities-api/
 - Today’s date is ' . gmdate( 'l, F j, Y' ) . '.
 ';
 

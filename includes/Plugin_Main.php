@@ -8,6 +8,7 @@
 
 namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo;
 
+use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Abilities\Abilities_Registrar;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Providers\Provider_Manager;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\REST_Routes\Chatbot_Messages_REST_Route;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Abilities;
@@ -79,6 +80,15 @@ class Plugin_Main {
 						return $allcaps;
 					}
 				);
+			}
+		);
+
+		// Add hooks to register abilities.
+		add_action(
+			'abilities_api_init',
+			function () {
+				$registrar = new Abilities_Registrar();
+				$registrar->register_abilities();
 			}
 		);
 

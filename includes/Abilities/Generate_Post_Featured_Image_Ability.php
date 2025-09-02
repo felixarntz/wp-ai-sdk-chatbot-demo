@@ -1,67 +1,48 @@
 <?php
 /**
- * Class Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Generate_Post_Featured_Image_Tool
+ * Class Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Abilities\Generate_Post_Featured_Image_Ability
  *
  * @since 0.1.0
  * @package wp-ai-sdk-chatbot-demo
  */
 
-namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools;
+namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Abilities;
 
+use Exception;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\AiClient;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Files\Enums\FileTypeEnum;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\DTO\Message;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\DTO\MessagePart;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\Enums\MessageRoleEnum;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Providers\ProviderRegistry;
-use WP_Error;
 use RuntimeException;
+use WP_Error;
 
 /**
- * Tool to generate and assign a featured image for a given post.
+ * Ability to generate and assign a featured image for a given post.
  *
  * @since 0.1.0
  */
-class Generate_Post_Featured_Image_Tool extends Abstract_Tool {
+class Generate_Post_Featured_Image_Ability extends Abstract_Ability {
 
 	/**
-	 * Temporary registry to use if AiClient is not available.
-	 *
-	 * @since 0.1.0
-	 * @var Provider_Manager|null
-	 */
-	public ?ProviderRegistry $temp_registry = null;
-
-	/**
-	 * Returns the name of the tool.
+	 * Returns the description of the ability.
 	 *
 	 * @since 0.1.0
 	 *
-	 * @return string The name of the tool.
-	 */
-	protected function name(): string {
-		return 'generate_post_featured_image';
-	}
-
-	/**
-	 * Returns the description of the tool.
-	 *
-	 * @since 0.1.0
-	 *
-	 * @return string The description of the tool.
+	 * @return string The description of the ability.
 	 */
 	protected function description(): string {
 		return 'Generates a featured image for a given post using an LLM and assigns it to the post.';
 	}
 
 	/**
-	 * Returns the parameters of the tool.
+	 * Returns the input schema of the ability.
 	 *
 	 * @since 0.1.0
 	 *
-	 * @return array<string, mixed> The parameters of the tool.
+	 * @return array<string, mixed> The input schema of the ability.
 	 */
-	protected function parameters(): array {
+	protected function input_schema(): array {
 		return array(
 			'type'       => 'object',
 			'properties' => array(
@@ -79,23 +60,40 @@ class Generate_Post_Featured_Image_Tool extends Abstract_Tool {
 	}
 
 	/**
-	 * Executes the tool with the given input arguments.
+	 * Returns the output schema of the ability.
 	 *
 	 * @since 0.1.0
 	 *
-	 * @param mixed $args The input arguments to the tool.
-	 * @return mixed|WP_Error The result of the tool execution, or a WP_Error on failure.
+	 * @return array<string, mixed> The output schema of the ability.
+	 */
+	protected function output_schema(): array {
+		return array(
+			'type'       => 'object',
+			'properties' => array(
+				'attachment_id' => array(
+					'type'        => 'integer',
+					'description' => 'The ID of the newly created attachment.',
+				),
+				'message'       => array(
+					'type'        => 'string',
+					'description' => 'A success message.',
+				),
+			),
+			'required'   => array( 'attachment_id', 'message' ),
+		);
+	}
+
+	/**
+	 * Executes the ability with the given input arguments.
+	 *
+	 * @since 0.1.0
+	 *
+	 * @param mixed $args The input arguments to the ability.
+	 * @return mixed|WP_Error The result of the ability execution, or a WP_Error on failure.
 	 *
 	 * @throws RuntimeException If the generated image is not an inline image (which should never happen given the config).
 	 */
-	public function execute( $args ) {
-		if ( ! current_user_can( 'edit_post', $args['post_id'] ) ) {
-			return new WP_Error(
-				'insufficient_capabilities',
-				'You do not have permission to edit this post.'
-			);
-		}
-
+	protected function execute_callback( $args ) {
 		$post = get_post( $args['post_id'] );
 
 		if ( ! $post ) {
@@ -176,12 +174,13 @@ class Generate_Post_Featured_Image_Tool extends Abstract_Tool {
 		);
 
 		// Required for wp_handle_sideload to work.
-		require_once ABSPATH . 'wp-admin/includes/file.php';
-		require_once ABSPATH . 'wp-admin/includes/media.php';
-		require_once ABSPATH . 'wp-admin/includes/image.php';
+		require_once ABSPATH . 'wp-admin/includes/file.php'; // @phpstan-ignore-line
+		require_once ABSPATH . 'wp-admin/includes/media.php'; // @phpstan-ignore-line
+		require_once ABSPATH . 'wp-admin/includes/image.php'; // @phpstan-ignore-line
 
 		$sideload = wp_handle_sideload( $file_array, array( 'test_form' => false ) );
 
+		// @phpstan-ignore-next-line
 		if ( is_wp_error( $sideload ) ) {
 			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
 			unlink( $filepath ); // Clean up the temporary file.
@@ -200,6 +199,7 @@ class Generate_Post_Featured_Image_Tool extends Abstract_Tool {
 			$post->ID
 		);
 
+		// @phpstan-ignore-next-line
 		if ( is_wp_error( $attachment_id ) ) {
 			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
 			unlink( $sideload['file'] ); // Clean up the uploaded file.
@@ -217,5 +217,23 @@ class Generate_Post_Featured_Image_Tool extends Abstract_Tool {
 			'attachment_id' => $attachment_id,
 			'message'       => 'Featured image generated and assigned successfully.',
 		);
+	}
+
+	/**
+	 * Checks whether the current user has permission to execute the ability with the given input arguments.
+	 *
+	 * @since 0.1.0
+	 *
+	 * @param mixed $args The input arguments to the ability.
+	 * @return bool|WP_Error True if the user has permission, false or WP_Error otherwise.
+	 */
+	protected function permission_callback( $args ) {
+		if ( ! current_user_can( 'edit_post', $args['post_id'] ) ) {
+			return new WP_Error(
+				'insufficient_capabilities',
+				'You do not have permission to edit this post.'
+			);
+		}
+		return true;
 	}
 }

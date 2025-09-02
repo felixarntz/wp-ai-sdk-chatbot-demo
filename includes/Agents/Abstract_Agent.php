@@ -9,8 +9,6 @@
 namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Agents;
 
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Agents\Contracts\Agent;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Providers\Provider_Manager;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Tools\Contracts\Tool;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\AiClient;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Builders\PromptBuilder;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\DTO\Message;
@@ -20,6 +18,7 @@ use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Tools\DTO
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Tools\DTO\FunctionDeclaration;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Tools\DTO\FunctionResponse;
 use RuntimeException;
+use WP_Ability;
 
 /**
  * Base class for an agent.
@@ -29,12 +28,12 @@ use RuntimeException;
 abstract class Abstract_Agent implements Agent {
 
 	/**
-	 * The allowed tools for the agent, keyed by their name.
+	 * The allowed abilities for the agent, keyed by their sanitized name.
 	 *
 	 * @since 0.1.0
-	 * @var array<Tool>
+	 * @var array<WP_Ability>
 	 */
-	private array $tools_map;
+	private array $abilities_map;
 
 	/**
 	 * The trajectory of messages exchanged with the agent.
@@ -61,26 +60,18 @@ abstract class Abstract_Agent implements Agent {
 	private int $current_step_index = 0;
 
 	/**
-	 * Temporary provider manager to be able to create a prompt builder if AiClient is not available.
-	 *
-	 * @since 0.1.0
-	 * @var Provider_Manager|null
-	 */
-	protected ?Provider_Manager $temp_provider_manager;
-
-	/**
 	 * Constructor.
 	 *
 	 * @since 0.1.0
 	 *
-	 * @param array<Tool>          $tools      The tools available to the agent.
+	 * @param array<WP_Ability>    $abilities  The abilities available to the agent.
 	 * @param array<Message>       $trajectory The initial trajectory of messages. Must contain at least the first message.
 	 * @param array<string, mixed> $options    Additional options for the agent.
 	 */
-	public function __construct( array $tools, array $trajectory, array $options = array() ) {
-		$this->tools_map = array();
-		foreach ( $tools as $tool ) {
-			$this->tools_map[ $tool->get_name() ] = $tool;
+	public function __construct( array $abilities, array $trajectory, array $options = array() ) {
+		$this->abilities_map = array();
+		foreach ( $abilities as $ability ) {
+			$this->abilities_map[ $this->sanitize_function_name( $ability->get_name() ) ] = $ability;
 		}
 
 		$this->trajectory = $trajectory;
@@ -120,7 +111,7 @@ abstract class Abstract_Agent implements Agent {
 
 			$result_message = $this->prompt_llm( $prompt_builder );
 
-			list( $function_call_tools, $invalid_function_call_names ) = $this->extract_function_call_tools( $result_message );
+			list( $function_call_tools, $invalid_function_call_names ) = $this->extract_function_call_abilities( $result_message );
 
 			$new_messages[] = $result_message;
 
@@ -146,9 +137,9 @@ abstract class Abstract_Agent implements Agent {
 			$function_responses = array();
 			foreach ( $function_call_tools as $pending_tool ) {
 				$function_call = $pending_tool['call'];
-				$tool          = $pending_tool['tool'];
+				$ability       = $pending_tool['tool'];
 
-				$function_responses[] = $this->process_function_call( $tool, $function_call );
+				$function_responses[] = $this->process_function_call( $ability, $function_call );
 			}
 
 			// Append a message to the trajectory with the function responses.
@@ -213,17 +204,17 @@ abstract class Abstract_Agent implements Agent {
 	}
 
 	/**
-	 * Processes a function call by executing the corresponding tool and returning the function response.
+	 * Processes a function call by executing the corresponding ability and returning the function response.
 	 *
 	 * @since 0.1.0
 	 *
-	 * @param Tool         $tool          The tool to execute.
+	 * @param WP_Ability   $ability       The ability to execute.
 	 * @param FunctionCall $function_call The function call to process.
 	 * @return FunctionResponse The response from the executed function.
 	 */
-	protected function process_function_call( Tool $tool, FunctionCall $function_call ): FunctionResponse {
-		// Call the tool with the provided arguments.
-		$response = $tool->execute( $function_call->getArgs() );
+	protected function process_function_call( WP_Ability $ability, FunctionCall $function_call ): FunctionResponse {
+		// Call the ability with the provided arguments.
+		$response = $ability->execute( $function_call->getArgs() );
 		if ( is_wp_error( $response ) ) {
 			$response = 'The function call failed with an error: ' . $response->get_error_message();
 		}
@@ -258,19 +249,19 @@ abstract class Abstract_Agent implements Agent {
 	}
 
 	/**
-	 * Finds a tool by its name.
+	 * Finds an ability by its name.
 	 *
 	 * @since 0.1.0
 	 *
-	 * @param string $name The name of the tool to find.
-	 * @return Tool|null The tool if found, null otherwise.
+	 * @param string $name The name of the ability to find.
+	 * @return WP_Ability|null The ability if found, null otherwise.
 	 */
-	private function find_tool_by_name( string $name ): ?Tool {
-		return $this->tools_map[ $name ] ?? null;
+	private function find_ability_by_name( string $name ): ?WP_Ability {
+		return $this->abilities_map[ $name ] ?? null;
 	}
 
 	/**
-	 * Gets the function declarations for the tools available to the agent.
+	 * Gets the function declarations for the abilities available to the agent.
 	 *
 	 * @since 0.1.0
 	 *
@@ -278,46 +269,62 @@ abstract class Abstract_Agent implements Agent {
 	 */
 	private function get_function_declarations(): array {
 		$function_declarations = array();
-		foreach ( $this->tools_map as $tool ) {
+		foreach ( $this->abilities_map as $ability ) {
 			$function_declarations[] = new FunctionDeclaration(
-				$tool->get_name(),
-				$tool->get_description(),
-				$tool->get_parameters()
+				$this->sanitize_function_name( $ability->get_name() ),
+				$ability->get_description(),
+				$ability->get_input_schema()
 			);
 		}
 		return $function_declarations;
 	}
 
 	/**
-	 * Extracts the function call tools from the result message.
+	 * Sanitizes a function name so that it can be processed by LLMs.
+	 *
+	 * @since 0.1.0
+	 *
+	 * @param string $name The function or tool name to sanitize.
+	 * @return string The sanitized function name.
+	 */
+	private function sanitize_function_name( string $name ): string {
+		// If the name contains a namespace (e.g. "namespace/name"), use only the part after the slash.
+		if ( str_contains( $name, '/' ) ) {
+			$name = explode( '/', $name )[1];
+		}
+		return str_replace( '-', '_', $name );
+	}
+
+	/**
+	 * Extracts the function call abilities from the result message.
 	 *
 	 * @since 0.1.0
 	 *
 	 * @param Message $result_message The result message to extract function calls from.
 	 * @return array{0: array<array<string, mixed>>, 1: array<string>} The first element is a list of function call
-	 *                                                                 tools, the second element is a list of invalid
-	 *                                                                 function call names.
+	 *                                                                 abilities, the second element is a list of
+	 *                                                                 invalid function call names.
 	 */
-	private function extract_function_call_tools( Message $result_message ): array {
-		$function_call_tools         = array();
+	private function extract_function_call_abilities( Message $result_message ): array {
+		$function_call_abilities     = array();
 		$invalid_function_call_names = array();
 		foreach ( $result_message->getParts() as $message_part ) {
 			if ( $message_part->getType()->isFunctionCall() ) {
 				$function_call = $message_part->getFunctionCall();
 
-				$found_tool = $this->find_tool_by_name( $function_call->getName() );
-				if ( null === $found_tool ) {
+				$found_ability = $this->find_ability_by_name( $function_call->getName() );
+				if ( null === $found_ability ) {
 					$invalid_function_call_names[] = $function_call->getName();
 					continue;
 				}
 
-				$function_call_tools[] = array(
+				$function_call_abilities[] = array(
 					'call' => $function_call,
-					'tool' => $found_tool,
+					'tool' => $found_ability,
 				);
 			}
 		}
 
-		return array( $function_call_tools, $invalid_function_call_names );
+		return array( $function_call_abilities, $invalid_function_call_names );
 	}
 }
