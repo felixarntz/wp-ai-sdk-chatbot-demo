@@ -4,8 +4,73 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "acf221f747f01e4aab06667c96663544",
+    "content-hash": "f5fd3152560eb42c983ba88721ae3419",
     "packages": [
+        {
+            "name": "automattic/jetpack-autoloader",
+            "version": "v5.0.9",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Automattic/jetpack-autoloader.git",
+                "reference": "c9e9b82cc515d9ed093fa0ff21245f277aeceb4e"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Automattic/jetpack-autoloader/zipball/c9e9b82cc515d9ed093fa0ff21245f277aeceb4e",
+                "reference": "c9e9b82cc515d9ed093fa0ff21245f277aeceb4e",
+                "shasum": ""
+            },
+            "require": {
+                "composer-plugin-api": "^2.2",
+                "php": ">=7.2"
+            },
+            "require-dev": {
+                "automattic/jetpack-changelogger": "^6.0.5",
+                "automattic/phpunit-select-config": "^1.0.3",
+                "composer/composer": "^2.2",
+                "yoast/phpunit-polyfills": "^4.0.0"
+            },
+            "type": "composer-plugin",
+            "extra": {
+                "class": "Automattic\\Jetpack\\Autoloader\\CustomAutoloaderPlugin",
+                "autotagger": true,
+                "mirror-repo": "Automattic/jetpack-autoloader",
+                "branch-alias": {
+                    "dev-trunk": "5.0.x-dev"
+                },
+                "changelogger": {
+                    "link-template": "https://github.com/Automattic/jetpack-autoloader/compare/v${old}...v${new}"
+                },
+                "version-constants": {
+                    "::VERSION": "src/AutoloadGenerator.php"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Automattic\\Jetpack\\Autoloader\\": "src"
+                },
+                "classmap": [
+                    "src/AutoloadGenerator.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-2.0-or-later"
+            ],
+            "description": "Creates a custom autoloader for a plugin or theme.",
+            "keywords": [
+                "autoload",
+                "autoloader",
+                "composer",
+                "jetpack",
+                "plugin",
+                "wordpress"
+            ],
+            "support": {
+                "source": "https://github.com/Automattic/jetpack-autoloader/tree/v5.0.9"
+            },
+            "time": "2025-07-28T19:49:50+00:00"
+        },
         {
             "name": "composer/installers",
             "version": "v1.12.0",
@@ -931,20 +996,20 @@
         },
         {
             "name": "symfony/deprecation-contracts",
-            "version": "v2.5.4",
+            "version": "v3.6.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/deprecation-contracts.git",
-                "reference": "605389f2a7e5625f273b53960dc46aeaf9c62918"
+                "reference": "63afe740e99a13ba87ec199bb07bbdee937a5b62"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/deprecation-contracts/zipball/605389f2a7e5625f273b53960dc46aeaf9c62918",
-                "reference": "605389f2a7e5625f273b53960dc46aeaf9c62918",
+                "url": "https://api.github.com/repos/symfony/deprecation-contracts/zipball/63afe740e99a13ba87ec199bb07bbdee937a5b62",
+                "reference": "63afe740e99a13ba87ec199bb07bbdee937a5b62",
                 "shasum": ""
             },
             "require": {
-                "php": ">=7.1"
+                "php": ">=8.1"
             },
             "type": "library",
             "extra": {
@@ -953,7 +1018,7 @@
                     "name": "symfony/contracts"
                 },
                 "branch-alias": {
-                    "dev-main": "2.5-dev"
+                    "dev-main": "3.6-dev"
                 }
             },
             "autoload": {
@@ -978,7 +1043,7 @@
             "description": "A generic function and convention to trigger deprecation notices",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/deprecation-contracts/tree/v2.5.4"
+                "source": "https://github.com/symfony/deprecation-contracts/tree/v3.6.0"
             },
             "funding": [
                 {
@@ -994,7 +1059,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2024-09-25T14:11:13+00:00"
+            "time": "2024-09-25T14:21:43+00:00"
         },
         {
             "name": "wordpress/abilities-api",
@@ -1072,17 +1137,11 @@
         },
         {
             "name": "wordpress/php-ai-client",
-            "version": "0.1.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/WordPress/php-ai-client.git",
-                "reference": "9ec56e70e692791493a3eaff1b69f25f4daeded7"
-            },
+            "version": "dev-fix/empty-tool-calls-parameters",
             "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/WordPress/php-ai-client/zipball/9ec56e70e692791493a3eaff1b69f25f4daeded7",
-                "reference": "9ec56e70e692791493a3eaff1b69f25f4daeded7",
-                "shasum": ""
+                "type": "path",
+                "url": "/Users/jameslepage/Projects/php-ai-client",
+                "reference": "b1a5c47a283ec31bd8fdf223f26d0008f8abc60f"
             },
             "require": {
                 "ext-json": "*",
@@ -1107,14 +1166,36 @@
             },
             "type": "library",
             "autoload": {
-                "files": [
-                    "src/polyfills.php"
-                ],
                 "psr-4": {
                     "WordPress\\AiClient\\": "src/"
+                },
+                "files": [
+                    "src/polyfills.php"
+                ]
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "WordPress\\AiClient\\Tests\\": "tests/"
                 }
             },
-            "notification-url": "https://packagist.org/downloads/",
+            "scripts": {
+                "lint": [
+                    "@phpcs",
+                    "@phpstan"
+                ],
+                "phpcbf": [
+                    "phpcbf"
+                ],
+                "phpcs": [
+                    "phpcs"
+                ],
+                "phpstan": [
+                    "phpstan analyze --memory-limit=256M"
+                ],
+                "phpunit": [
+                    "phpunit"
+                ]
+            },
             "license": [
                 "GPL-2.0-or-later"
             ],
@@ -1135,21 +1216,26 @@
                 "issues": "https://github.com/WordPress/php-ai-client/issues",
                 "source": "https://github.com/WordPress/php-ai-client"
             },
-            "time": "2025-08-29T22:46:54+00:00"
+            "transport-options": {
+                "symlink": true,
+                "relative": false
+            }
         }
     ],
     "packages-dev": [],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {
+        "wordpress/php-ai-client": 20
+    },
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
-        "php": ">=7.4"
+        "php": ">=8.1"
     },
-    "platform-dev": [],
+    "platform-dev": {},
     "platform-overrides": {
-        "php": "7.4.33"
+        "php": "8.1.0"
     },
     "plugin-api-version": "2.6.0"
 }

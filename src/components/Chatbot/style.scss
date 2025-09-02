@@ -3,361 +3,330 @@
 	&__container {
 		position: relative;
 		width: 275px;
-	}
-
-	&__inner-container {
 		height: 500px;
-		background-color: #fff;
-		border-radius: 3px;
-		border-radius: 5px;
-	}
-
-	&__header {
-		border-top-right-radius: 5px;
-		border-top-left-radius: 5px;
-		border-bottom: 1px solid #d8d8d8;
-		background-color: #fff;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		font-size: 0.85rem;
-		color: #514f4f;
-		padding: 12.5px;
-		font-weight: 700;
-	}
-
-	&__header-title {
-		font-weight: 700;
-		padding-right: 36px;
-
-		&__note {
-			font-size: 80%;
-			font-weight: 400;
-		}
-	}
-
-	&__header-actions {
-		display: flex;
-		align-items: center;
-		justify-content: flex-end;
-	}
-
-	&__header-reset-button {
-		margin: 0 10px 0 0;
-		padding: 0;
-		background-color: transparent;
-		border: 1px solid transparent;
-		color: #646970;
-		z-index: 1000;
-		outline: none;
-		transition: color 0.1s ease-in-out;
-		cursor: pointer;
-
-		&:hover,
-		&:focus,
-		&:active {
-			color: #135e96;
-		}
-
-		&__icon::before {
-			content: "\f171"; // Dashicon for "redo" or "reset"
-			font: 400 20px / 1 dashicons; // stylelint-disable-line font-family-no-missing-generic-family-keyword
-			vertical-align: middle;
-		}
-	}
-
-	&__header-close-button {
-		margin: 0;
-		padding: 0;
-		background-color: transparent;
-		border: 1px solid transparent;
-		color: #646970;
-		z-index: 1000;
-		outline: none;
-		transition: color 0.1s ease-in-out;
-		cursor: pointer;
-
-		&:hover,
-		&:focus,
-		&:active {
-			color: #135e96;
-		}
-
-		&__icon::before {
-			content: "\f158";
-			font: 400 20px / 1 dashicons; // stylelint-disable-line font-family-no-missing-generic-family-keyword
-			vertical-align: middle;
-		}
-	}
-
-	&__messages-container {
-		padding: 0 17.5px 10px 17.5px;
-		overflow-x: hidden;
-		overflow-y: scroll;
-		height: 396px;
-	}
-
-	&__message-container {
-		display: flex;
-		margin: 15px 0;
-
-		&--user {
-			justify-content: flex-start;
-			flex-direction: row-reverse;
-		}
-
-		&--assistant {
-			justify-content: flex-start;
-		}
-	}
-
-	&__avatar-container {
-		width: 40px;
-		height: 40px;
-		border-radius: 50%;
-		font-size: 1.2rem;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-
-		&--user {
-			margin-left: 12.5px;
-			background-color: #3d4e8d;
-		}
-
-		&--assistant {
-			margin-right: 12.5px;
-			background-color: #d8d8d8;
-		}
-	}
-
-	&__avatar-icon {
-
-		&--user {
-			fill: #fff;
-			width: 15px;
-			height: 15px;
-		}
-
-		&--assistant {
-			fill: #494646;
-		}
-	}
-
-	&__avatar-letter {
-		margin: 0;
-		padding: 0;
-
-		&--user {
-			color: #fff;
-		}
-
-		&--assistant {
-			color: #1d1d1d;
-		}
-	}
-
-	&__message {
-		padding: 10px;
-		border-radius: 5px;
-		font-size: 0.9rem;
-		font-weight: medium;
-		position: relative;
-		width: 184.5px;
-		text-align: left;
-
-		&--user {
-			background-color: #f1f1f1;
-			color: #585858;
-		}
-
-		&--assistant {
-			background-color: #2898ec;
-			color: #fff;
-
-			a {
-				color: #ddd;
-			}
-
-			&.wp-ai-sdk-chatbot-demo-error {
-				background-color: #d63638;
-			}
-		}
-
-		p {
-			font-size: 0.9rem;
-		}
-
-		ul {
-			list-style: disc;
-		}
-
-		ul,
-		ol {
-			padding-left: 1rem;
-		}
-
-		p:first-child,
-		ul:first-child,
-		ol:first-child {
-			margin-top: 0;
-		}
-
-		p:last-child,
-		ul:last-child,
-		ol:last-child {
-			margin-bottom: 0;
-		}
-
-		div + .button {
-			margin-top: 1rem;
-		}
-
-		img,
-		audio,
-		video {
-			max-width: 100%;
-			height: auto;
-		}
-	}
-
-	&__message-part {
-		margin: 1em 0;
-
-		&:first-child {
-			margin-top: 0;
-		}
-
-		&:last-child {
-			margin-bottom: 0;
-		}
-
-		h1,
-		h2,
-		h3,
-		h4,
-		h5,
-		h6 {
-
-			/*
-			* Ensure WordPress's general heading color does not override the
-			* content part text color.
-			*/
-			color: inherit;
-		}
-
-		textarea.code {
+		border: none !important;
+		background: transparent !important;
+		padding: 0 !important;
+		margin: 0 !important;
+		box-shadow: none !important;
+		border-radius: 0 !important;
+		outline: none !important;
+		
+		// Ensure Agenttic UI takes full container size and is isolated
+		> .agenttic {
 			width: 100%;
-		}
-	}
-
-	&__message-arrow {
-		width: 0;
-		height: 0;
-		border-top: 8px solid transparent;
-		border-bottom: 8px solid transparent;
-		position: absolute;
-
-		&--user {
-			border-left: 8px solid #f1f1f1;
-			right: -7px;
-			top: 13px;
-		}
-
-		&--assistant {
-			border-right: 8px solid #2898ec;
-			left: -7px;
-			top: 13px;
-
-			&.wp-ai-sdk-chatbot-demo-error {
-				border-right-color: #d63638;
+			height: 100%;
+			border-radius: calc(var(--radius-lg, 1rem) + 1px);
+			overflow: hidden;
+			background: white !important;
+			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+			border: 1px solid rgba(0, 0, 0, 0.1);
+			
+			// Reset any inherited WordPress admin styles
+			font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+			line-height: 1.5;
+			color: var(--color-foreground, #000);
+			
+			// Override CSS custom properties to ensure white background
+			--color-background: white;
+			
+			// Ensure the embedded chat takes full height and has white background with padding
+			.Chat-module_container.Chat-module_embedded {
+				height: 100%;
+				border-radius: inherit;
+				background: white !important;
+				padding: var(--spacing-2, 0.5rem);
+				display: flex;
+				flex-direction: column;
+			}
+			
+			// Ensure all child elements have proper white background
+			.ConversationView-module_container,
+			.Messages-module_container,
+			.ChatFooter-module_container {
+				background: white !important;
+			}
+			
+			// Reset WordPress admin styles that might interfere
+			* {
+				box-sizing: border-box;
+			}
+			
+			// Reset all base HTML elements to prevent WordPress admin style bleeding
+			h1, h2, h3, h4, h5, h6 {
+				margin: 0 !important;
+				padding: 0 !important;
+				font-weight: inherit !important;
+				font-size: inherit !important;
+				line-height: inherit !important;
+				color: inherit !important;
+				font-family: inherit !important;
+				text-transform: none !important;
+				letter-spacing: normal !important;
+				border: none !important;
+				background: transparent !important;
+				text-decoration: none !important;
+			}
+			
+			p {
+				margin: 0 0 1em 0 !important;
+				padding: 0 !important;
+				font-size: inherit !important;
+				line-height: inherit !important;
+				color: inherit !important;
+				font-family: inherit !important;
+				font-weight: inherit !important;
+				text-decoration: none !important;
+				border: none !important;
+				background: transparent !important;
+				
+				&:last-child {
+					margin-bottom: 0 !important;
+				}
+			}
+			
+			ul, ol {
+				margin: 0 0 1em 0 !important;
+				padding: 0 0 0 1.5em !important;
+				list-style: disc !important;
+				color: inherit !important;
+				font-family: inherit !important;
+				font-size: inherit !important;
+				line-height: inherit !important;
+				background: transparent !important;
+				border: none !important;
+				
+				&:last-child {
+					margin-bottom: 0 !important;
+				}
+			}
+			
+			ol {
+				list-style: decimal !important;
+			}
+			
+			li {
+				margin: 0 0 0.5em 0 !important;
+				padding: 0 !important;
+				color: inherit !important;
+				font-family: inherit !important;
+				font-size: inherit !important;
+				line-height: inherit !important;
+				background: transparent !important;
+				border: none !important;
+				list-style: inherit !important;
+				
+				&:last-child {
+					margin-bottom: 0 !important;
+				}
+			}
+			
+			strong, b {
+				font-weight: 600 !important;
+				color: inherit !important;
+				font-family: inherit !important;
+				font-size: inherit !important;
+				background: transparent !important;
+				border: none !important;
+			}
+			
+			em, i {
+				font-style: italic !important;
+				color: inherit !important;
+				font-family: inherit !important;
+				font-size: inherit !important;
+				background: transparent !important;
+				border: none !important;
+			}
+			
+			a {
+				color: var(--color-primary, #0073aa) !important;
+				text-decoration: underline !important;
+				font-family: inherit !important;
+				font-size: inherit !important;
+				background: transparent !important;
+				border: none !important;
+				box-shadow: none !important;
+				
+				&:hover {
+					text-decoration: none !important;
+					box-shadow: none !important;
+				}
+				
+				&:focus {
+					outline: none !important;
+					box-shadow: none !important;
+				}
+			}
+			
+			blockquote {
+				margin: 1em 0 !important;
+				padding: 0 1em !important;
+				border-left: 3px solid var(--color-muted, #ccc) !important;
+				background: transparent !important;
+				font-family: inherit !important;
+				font-size: inherit !important;
+				color: inherit !important;
+				font-style: normal !important;
+			}
+			
+			code {
+				background: var(--color-muted, #f5f5f5) !important;
+				padding: 0.2em 0.4em !important;
+				border-radius: 3px !important;
+				font-family: 'Courier New', Consolas, Monaco, monospace !important;
+				font-size: 0.9em !important;
+				color: inherit !important;
+				border: none !important;
+			}
+			
+			pre {
+				background: var(--color-muted, #f5f5f5) !important;
+				padding: 1em !important;
+				border-radius: 5px !important;
+				font-family: 'Courier New', Consolas, Monaco, monospace !important;
+				font-size: 0.9em !important;
+				color: inherit !important;
+				border: none !important;
+				margin: 1em 0 !important;
+				overflow-x: auto !important;
+			}
+			
+			// Override WordPress admin form styles
+			input,
+			textarea,
+			button {
+				font-family: inherit !important;
+				font-size: inherit !important;
+				line-height: inherit !important;
+			}
+			
+			// Prevent WordPress admin button styles from bleeding in
+			button {
+				border: none !important;
+				background: none !important;
+				padding: 0 !important;
+				margin: 0 !important;
+				box-shadow: none !important;
+				text-decoration: none !important;
+				color: inherit !important;
+				font-family: inherit !important;
+				font-size: inherit !important;
+				font-weight: inherit !important;
+				
+				&:focus {
+					box-shadow: none !important;
+					outline: none !important;
+				}
+			}
+			
+			// Reset WordPress admin input styles
+			input,
+			textarea {
+				border: none !important;
+				background: transparent !important;
+				box-shadow: none !important;
+				outline: none !important;
+				color: inherit !important;
+				font-family: inherit !important;
+				font-size: inherit !important;
+				
+				&:focus {
+					border: none !important;
+					box-shadow: none !important;
+					outline: none !important;
+				}
 			}
 		}
 	}
 
-	&__loading-icon-container {
-		height: 17px;
-		width: 25px;
-	}
+	// Custom header styles
+	&__header {
+		display: flex !important;
+		justify-content: space-between !important;
+		align-items: flex-start !important;
+		padding: var(--spacing-2, 0.5rem) !important;
+		border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+		background: white !important;
+		margin: 0 !important;
+		border-radius: calc(var(--radius-lg, 1rem) + 1px) calc(var(--radius-lg, 1rem) + 1px) 0 0 !important;
 
-	&__input-container {
-		position: absolute;
-		bottom: 0;
-		width: 100%;
-		display: flex;
-	}
-
-	&__input {
-		width: 100%;
-		padding: 12.5px;
-		border: none;
-		font-size: 0.85rem;
-		border-top: 1px solid #d8d8d8;
-		border-bottom-left-radius: 5px;
-	}
-
-	&__input-form {
-		width: 100%;
-		display: flex;
-	}
-
-	&__input::placeholder {
-		color: #585858;
-	}
-
-	&__btn-send {
-		background-color: #2898ec;
-		width: 100px;
-		border: none;
-		color: #fff;
-		border-bottom-right-radius: 5px;
-	}
-
-	&__btn-send-icon {
-		fill: #fff;
-		width: 15px;
-		margin: 0 auto;
-	}
-
-	&__loader-container {
-		display: flex;
-		width: 100%;
-		justify-content: flex-start;
-		align-items: center;
-	}
-
-	&__loader {
-		fill: #2898ec;
-	}
-
-	&__loader-dot {
-		animation: load 1s infinite;
-
-		&:first-child {
-			animation-delay: 0s;
+		&-title {
+			flex: 1 !important;
+			font-size: 14px !important;
+			font-weight: 600 !important;
+			color: #1e1e1e !important;
+			line-height: 1.4 !important;
+			margin: 0 !important;
+			padding: 0 !important;
 		}
 
-		&:not(:first-child, :last-child) {
-			animation-delay: 0.2s;
+		&-subtitle {
+			font-size: 12px !important;
+			font-weight: 400 !important;
+			color: #6b7280 !important;
+			margin-top: 2px !important;
+			line-height: 1.3 !important;
 		}
 
-		&:last-child {
-			animation-delay: 0.4s;
+		&-actions {
+			display: flex !important;
+			align-items: center !important;
+			gap: 8px !important;
+		}
+
+		&-reset-button,
+		&-close-button {
+			display: flex !important;
+			align-items: center !important;
+			justify-content: center !important;
+			width: 24px !important;
+			height: 24px !important;
+			padding: 0 !important;
+			margin: 0 !important;
+			border: none !important;
+			background: transparent !important;
+			border-radius: 4px !important;
+			cursor: pointer !important;
+			transition: background-color 0.15s ease !important;
+
+			&:hover {
+				background: rgba(0, 0, 0, 0.05) !important;
+			}
+
+			&:focus {
+				outline: 2px solid #0073aa !important;
+				outline-offset: 1px !important;
+			}
+		}
+
+		&-reset-icon,
+		&-close-icon {
+			display: block !important;
+			width: 16px !important;
+			height: 16px !important;
+			background-size: contain !important;
+			background-repeat: no-repeat !important;
+			background-position: center !important;
+		}
+
+		&-reset-icon {
+			background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23374151' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8'/%3E%3Cpath d='M21 3v5h-5'/%3E%3Cpath d='M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16'/%3E%3Cpath d='M3 21v-5h5'/%3E%3C/svg%3E") !important;
+		}
+
+		&-close-icon {
+			background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23374151' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='18' y1='6' x2='6' y2='18'/%3E%3Cline x1='6' y1='6' x2='18' y2='18'/%3E%3C/svg%3E") !important;
 		}
 	}
-}
 
-@keyframes load {
+	// Adjust agenttic content to account for header
+	&__agenttic-content {
+		height: calc(100% - 56px) !important;
+		overflow: hidden !important;
 
-	0% {
-		opacity: 0;
-	}
-
-	50% {
-		opacity: 1;
-	}
-
-	100% {
-		opacity: 0;
+		.Chat-module_container.Chat-module_embedded {
+			height: 100% !important;
+			padding: 0 var(--spacing-2, 0.5rem) var(--spacing-2, 0.5rem) var(--spacing-2, 0.5rem) !important;
+		}
 	}
 }

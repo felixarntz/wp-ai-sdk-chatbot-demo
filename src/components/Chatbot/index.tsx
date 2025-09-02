@@ -2,28 +2,28 @@
  * External dependencies
  */
 import clsx from 'clsx';
+import { AgentUI } from '@automattic/agenttic-ui';
 
 /**
  * WordPress dependencies
  */
 import apiFetch from '@wordpress/api-fetch';
-import { useEffect, useState, useRef } from '@wordpress/element';
+import { useState, useMemo } from '@wordpress/element';
 
 /**
  * Internal dependencies
  */
 import { useChatbotConfig } from '../../config';
-import ChatbotHeader from './chatbot-header';
-import ChatbotMessage from './chatbot-message';
-import SendIcon from './send-icon';
 import './style.scss';
 import {
 	ChatbotMessage as ChatbotMessageType,
-	MessageRole,
-	MessagePartChannel,
-	MessagePartType,
 } from '../../types';
 import logError from '../../utils/log-error';
+import { 
+	transformMessagesToAgenttic, 
+	createUserMessage,
+	type AgentticMessage 
+} from '../../utils/message-transformer';
 
 type ChatbotProps = {
 	/**
@@ -51,7 +51,7 @@ type ChatbotProps = {
 };
 
 /**
- * Renders the chatbot.
+ * Renders the chatbot using Agenttic UI.
  *
  * @since 0.1.0
  *
@@ -65,52 +65,45 @@ export default function Chatbot( props: ChatbotProps ) {
 	const labels = useChatbotConfig( 'labels' );
 	const initialBotMessage = useChatbotConfig( 'initialBotMessage' );
 
-	const messagesContainerRef = useRef< HTMLDivElement | null >( null );
-	const inputRef = useRef< HTMLInputElement | null >( null );
-
-	const scrollIntoView = () => {
-		setTimeout( () => {
-			if ( messagesContainerRef.current ) {
-				messagesContainerRef.current.scrollTop =
-					messagesContainerRef?.current?.scrollHeight;
-			}
-		}, 50 );
-	};
-
-	// Scroll to the latest message when the component mounts.
-	useEffect( () => {
-		scrollIntoView();
-	} );
-
-	// Focus on the input when the component mounts.
-	useEffect( () => {
-		if ( inputRef.current ) {
-			inputRef.current.focus();
-		}
-	}, [ inputRef ] );
-
-	const [ input, setInputValue ] = useState( '' );
 	const [ loading, setLoading ] = useState( false );
+
+	// Transform WordPress AI SDK messages to Agenttic format
+	const agentticMessages = useMemo( (): AgentticMessage[] => {
+		if ( ! messages ) {
+			return [];
+		}
+
+		const transformedMessages = transformMessagesToAgenttic( messages );
+		
+		// Add initial bot message if it exists and no messages yet
+		if ( initialBotMessage && transformedMessages.length === 0 ) {
+			return [
+				{
+					id: 'initial-message',
+					content: [{ type: 'text', text: initialBotMessage }],
+					role: 'agent' as const,
+					timestamp: Date.now(),
+					archived: false,
+					showIcon: true,
+				},
+			];
+		}
+
+		return transformedMessages;
+	}, [ messages, initialBotMessage ] );
 
 	const sendPrompt = async ( message: string ) => {
 		const currentMessages = messages || [];
 
-		const promptMessage: ChatbotMessageType = {
-			role: MessageRole.User,
-			parts: [
-				{
-					channel: MessagePartChannel.Content,
-					type: MessagePartType.Text,
-					text: message,
-				},
-			],
-			type: 'regular',
-		};
+		// Create user message in WordPress AI SDK format
+		const promptMessage = createUserMessage( message );
 
+		// Update messages with user input immediately
 		if ( onUpdateMessages ) {
 			onUpdateMessages( [ ...currentMessages, promptMessage ] );
 		}
 
+		// Send to backend
 		let newMessage: ChatbotMessageType | undefined;
 		setLoading( true );
 		try {
@@ -124,10 +117,7 @@ export default function Chatbot( props: ChatbotProps ) {
 		}
 		setLoading( false );
 
-		if ( newMessage ) {
-			setInputValue( '' );
-		}
-
+		// Update messages with response
 		if ( onUpdateMessages ) {
 			if ( newMessage ) {
 				onUpdateMessages( [
@@ -136,26 +126,29 @@ export default function Chatbot( props: ChatbotProps ) {
 					newMessage,
 				] );
 			} else {
+				// If API call failed, revert to previous messages
 				onUpdateMessages( [ ...currentMessages ] );
 			}
 		}
 	};
 
-	const onReset = () => {
-		if ( onUpdateMessages ) {
-			onUpdateMessages( [] );
-		}
-	};
+	// Note: Reset functionality could be added back as a custom action if needed
+	// const handleReset = async () => {
+	// 	try {
+	// 		await apiFetch( {
+	// 			path: messagesRoute,
+	// 			method: 'DELETE',
+	// 		} );
+	// 		if ( onUpdateMessages ) {
+	// 			onUpdateMessages( [] );
+	// 		}
+	// 	} catch ( error ) {
+	// 		logError( error );
+	// 	}
+	// };
 
-	const handleSubmit = ( event: React.FormEvent< HTMLFormElement > ) => {
-		event.preventDefault();
-
-		if ( ! input || loading ) {
-			return;
-		}
-
-		sendPrompt( input );
-		scrollIntoView();
+	const handleClose = () => {
+		onClose();
 	};
 
 	if ( ! messages || ! labels ) {
@@ -166,79 +159,62 @@ export default function Chatbot( props: ChatbotProps ) {
 		<div
 			className={ clsx( 'wp-ai-sdk-chatbot-demo__container', className ) }
 		>
-			<div className="wp-ai-sdk-chatbot-demo__inner-container">
-				<ChatbotHeader
-					messagesRoute={ messagesRoute }
-					onReset={ onReset }
-					onClose={ onClose }
-				/>
-				<div
-					className="wp-ai-sdk-chatbot-demo__messages-container"
-					ref={ messagesContainerRef }
-				>
-					{ !! initialBotMessage && (
-						<ChatbotMessage
-							content={ {
-								role: MessageRole.Model,
-								parts: [
-									{
-										channel: MessagePartChannel.Content,
-										type: MessagePartType.Text,
-										text: initialBotMessage,
-									},
-								],
-								type: 'regular',
+			<div className="agenttic">
+				{/* Custom header with reset and close functionality */}
+				<div className="wp-ai-sdk-chatbot-demo__header">
+					<div className="wp-ai-sdk-chatbot-demo__header-title">
+						{ labels?.title }
+						{ labels?.subtitle && (
+							<div className="wp-ai-sdk-chatbot-demo__header-subtitle">
+								{ labels.subtitle }
+							</div>
+						) }
+					</div>
+					<div className="wp-ai-sdk-chatbot-demo__header-actions">
+						<button
+							className="wp-ai-sdk-chatbot-demo__header-reset-button"
+							aria-label={ labels?.resetButton || 'Reset chat' }
+							onClick={ async () => {
+								try {
+									await apiFetch( {
+										path: messagesRoute,
+										method: 'DELETE',
+									} );
+									if ( onUpdateMessages ) {
+										onUpdateMessages( [] );
+									}
+								} catch ( error ) {
+									logError( error );
+								}
 							} }
-						/>
-					) }
-					{ messages.map( ( content, index: number ) => (
-						<ChatbotMessage key={ index } content={ content } />
-					) ) }
-					{ loading && (
-						<ChatbotMessage
-							content={ {
-								role: MessageRole.Model,
-								parts: [
-									{
-										channel: MessagePartChannel.Content,
-										type: MessagePartType.Text,
-										text: '',
-									},
-								],
-								type: 'regular',
-							} }
-							loading
-						/>
-					) }
-				</div>
-				<div className="wp-ai-sdk-chatbot-demo__input-container">
-					<form
-						className="wp-ai-sdk-chatbot-demo__input-form"
-						onSubmit={ handleSubmit }
-					>
-						<label
-							htmlFor="wp-ai-sdk-chatbot-demo-input"
-							className="screen-reader-text"
 						>
-							{ labels.inputLabel }
-						</label>
-						<input
-							id="wp-ai-sdk-chatbot-demo-input"
-							className="wp-ai-sdk-chatbot-demo__input"
-							placeholder={ labels.inputPlaceholder }
-							value={ input }
-							onChange={ ( event ) =>
-								setInputValue( event.target.value )
-							}
-							ref={ inputRef }
-						/>
-						<button className="wp-ai-sdk-chatbot-demo__btn-send">
-							<SendIcon className="wp-ai-sdk-chatbot-demo__btn-send-icon" />
+							<span className="wp-ai-sdk-chatbot-demo__header-reset-icon" />
 							<span className="screen-reader-text">
-								{ labels.sendButton }
+								{ labels?.resetButton || 'Reset chat' }
 							</span>
 						</button>
-					</form>
+						<button
+							className="wp-ai-sdk-chatbot-demo__header-close-button"
+							aria-label={ labels?.closeButton || 'Close chatbot' }
+							onClick={ handleClose }
+						>
+							<span className="wp-ai-sdk-chatbot-demo__header-close-icon" />
+							<span className="screen-reader-text">
+								{ labels?.closeButton || 'Close chatbot' }
+							</span>
+						</button>
+					</div>
+				</div>
+
+				{/* AgentUI without header */}
+				<div className="wp-ai-sdk-chatbot-demo__agenttic-content">
+					<AgentUI
+						messages={ agentticMessages }
+						onSubmit={ sendPrompt }
+						isProcessing={ loading }
+						variant="embedded"
+						placeholder={ labels.inputPlaceholder || 'Type your message...' }
+					/>
 				</div>
 			</div>
 		</div>

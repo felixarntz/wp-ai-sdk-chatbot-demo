@@ -75,22 +75,24 @@ function wp_ai_sdk_chatbot_demo_register_autoloader() {
 		return $registered;
 	}
 
-	// Check for the built autoloader class map as that needs to be used for a production build.
-	$autoload_file             = plugin_dir_path( __FILE__ ) . 'includes/vendor/composer/autoload_classmap.php';
-	$third_party_autoload_file = plugin_dir_path( __FILE__ ) . 'third-party/vendor/composer/autoload_classmap.php';
-	if ( file_exists( $autoload_file ) && file_exists( $third_party_autoload_file ) ) {
-		require_once plugin_dir_path( __FILE__ ) . 'includes/Plugin_Autoloader.php';
+	// Check for Jetpack Autoloader.
+	$jetpack_autoloader = plugin_dir_path( __FILE__ ) . 'vendor/autoload.php';
+	if ( file_exists( $jetpack_autoloader ) ) {
+		require_once $jetpack_autoloader;
+		
+		// Initialize Jetpack Autoloader
+		if ( class_exists( 'Automattic\Jetpack\Autoloader\jpAutoload' ) ) {
+			\Automattic\Jetpack\Autoloader\jpAutoload::init();
+		}
 
-		$class_name = 'Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Plugin_Autoloader';
-
-		$instance = new $class_name( 'Felix_Arntz\WP_AI_SDK_Chatbot_Demo', $autoload_file );
-		spl_autoload_register( array( $instance, 'autoload' ), true, true );
-
-		$third_party_instance = new $class_name( 'Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies', $third_party_autoload_file );
-		spl_autoload_register( array( $third_party_instance, 'autoload' ), true, true );
-
-		// Manually load the WordPress Abilities API.
-		require_once plugin_dir_path( __FILE__ ) . 'third-party/wordpress/abilities-api/includes/bootstrap.php';
+		// Only load abilities API if constant not already defined
+		// (avoids conflict with MCP Adapter plugin)
+		if ( ! defined( 'WP_ABILITIES_API_DIR' ) ) {
+			$abilities_bootstrap = plugin_dir_path( __FILE__ ) . 'vendor/wordpress/abilities-api/includes/bootstrap.php';
+			if ( file_exists( $abilities_bootstrap ) ) {
+				require_once $abilities_bootstrap;
+			}
+		}
 
 		$registered = true;
 		return true;
