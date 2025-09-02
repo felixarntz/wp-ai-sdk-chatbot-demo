@@ -8,7 +8,7 @@
 
 namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Agents;
 
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\DTO\Message;
+use WordPress\AiClient\Messages\DTO\Message;
 use InvalidArgumentException;
 
 /**

@@ -8,10 +8,10 @@
 
 namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Providers;
 
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\AiClient;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Providers\DTO\ProviderMetadata;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Providers\Http\DTO\ApiKeyRequestAuthentication;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Providers\Models\DTO\ModelMetadata;
+use WordPress\AiClient\AiClient;
+use WordPress\AiClient\Providers\DTO\ProviderMetadata;
+use WordPress\AiClient\Providers\Http\DTO\ApiKeyRequestAuthentication;
+use WordPress\AiClient\Providers\Models\DTO\ModelMetadata;
 
 /**
  * Class for managing the different AI providers.

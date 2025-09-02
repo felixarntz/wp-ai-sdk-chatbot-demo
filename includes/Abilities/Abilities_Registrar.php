@@ -8,8 +8,6 @@
 
 namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Abilities;
 
-use function Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\wp_register_ability;
-
 /**
  * Registers all abilities for the plugin.
  *

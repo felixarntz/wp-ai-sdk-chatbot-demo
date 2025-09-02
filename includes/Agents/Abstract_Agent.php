@@ -9,18 +9,16 @@
 namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Agents;
 
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Agents\Contracts\Agent;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\AiClient;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Builders\PromptBuilder;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\DTO\Message;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\DTO\MessagePart;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Messages\Enums\MessageRoleEnum;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Tools\DTO\FunctionCall;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Tools\DTO\FunctionDeclaration;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Tools\DTO\FunctionResponse;
+use WordPress\AiClient\AiClient;
+use WordPress\AiClient\Builders\PromptBuilder;
+use WordPress\AiClient\Messages\DTO\Message;
+use WordPress\AiClient\Messages\DTO\MessagePart;
+use WordPress\AiClient\Messages\Enums\MessageRoleEnum;
+use WordPress\AiClient\Tools\DTO\FunctionCall;
+use WordPress\AiClient\Tools\DTO\FunctionDeclaration;
+use WordPress\AiClient\Tools\DTO\FunctionResponse;
 use RuntimeException;
 use WP_Ability;
-
-use function Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\wp_get_ability;
 
 /**
  * Base class for an agent.
