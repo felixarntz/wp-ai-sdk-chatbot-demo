@@ -155,7 +155,7 @@ class Chatbot_Messages_REST_Route {
 		// Add the provider ID to the message.
 		$provider_id = $this->provider_manager->get_current_provider_id();
 		if ( ! empty( $provider_id ) ) {
-			$model_id = $this->provider_manager->get_current_model_id();
+			$model_id = $this->provider_manager->get_preferred_model_id( $provider_id );
 			foreach ( $new_message[ Message::KEY_PARTS ] as &$part ) {
 				// This is an example where an extra channel with the metadata about the provider is added.
 				if ( MessagePartChannelEnum::METADATA !== $part[ MessagePart::KEY_CHANNEL ] ) {
