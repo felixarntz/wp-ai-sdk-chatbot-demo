@@ -153,11 +153,9 @@ class Plugin_Main {
 			'rest_api_init',
 			function () {
 				$chatbot_route = new Chatbot_Messages_REST_Route(
-					$this->provider_manager,
-					'wpaisdk-chatbot-demo/v1',
-					'messages'
+					$this->provider_manager
 				);
-				$chatbot_route->register_route();
+				$chatbot_route->register_routes();
 			}
 		);
 
@@ -227,7 +225,7 @@ class Plugin_Main {
 						}
 						
 						$script_config = array(
-							'messagesRoute'           => 'wpaisdk-chatbot-demo/v1/messages',
+							'messagesRoute'           => 'wpaisdk-chatbot/v1/messages',
 							'currentProviderMetadata' => $provider_metadata,
 							'currentModelMetadata'    => $model_metadata,
 						);
