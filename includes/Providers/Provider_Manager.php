@@ -8,15 +8,15 @@
 
 namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Providers;
 
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\AiClient;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\ProviderImplementations\Anthropic\AnthropicProvider;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\ProviderImplementations\Google\GoogleProvider;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\ProviderImplementations\OpenAi\OpenAiProvider;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Providers\DTO\ProviderMetadata;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Providers\Http\DTO\ApiKeyRequestAuthentication;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Providers\Http\HttpTransporterFactory;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Providers\Models\DTO\ModelMetadata;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WordPress\AiClient\Providers\ProviderRegistry;
+use WordPress\AiClient\AiClient;
+use WordPress\AiClient\ProviderImplementations\Anthropic\AnthropicProvider;
+use WordPress\AiClient\ProviderImplementations\Google\GoogleProvider;
+use WordPress\AiClient\ProviderImplementations\OpenAi\OpenAiProvider;
+use WordPress\AiClient\Providers\DTO\ProviderMetadata;
+use WordPress\AiClient\Providers\Http\DTO\ApiKeyRequestAuthentication;
+use WordPress\AiClient\Providers\Http\HttpTransporterFactory;
+use WordPress\AiClient\Providers\Models\DTO\ModelMetadata;
+use WordPress\AiClient\Providers\ProviderRegistry;
 
 /**
  * Class for managing the different AI providers.
@@ -44,6 +44,15 @@ class Provider_Manager {
 	 * @var array<string>|null List of available AI SDK provider IDs, or null if not determined yet.
 	 */
 	protected ?array $available_provider_ids = null;
+
+	/**
+	 * Track providers with invalid API keys.
+	 *
+	 * @since 0.1.0
+	 *
+	 * @var array<string, string> Map of provider IDs to error messages.
+	 */
+	protected array $invalid_providers = array();
 
 	/**
 	 * Constructor.
@@ -75,8 +84,20 @@ class Provider_Manager {
 		$this->available_provider_ids = array_values(
 			array_filter(
 				$this->provider_ids,
-				static function ( string $provider_id ) use ( $registry ) {
-					return $registry->hasProvider( $provider_id ) && $registry->isProviderConfigured( $provider_id );
+				function ( string $provider_id ) use ( $registry ) {
+					try {
+						return $registry->hasProvider( $provider_id ) && $registry->isProviderConfigured( $provider_id );
+					} catch ( \Exception $e ) {
+						// Track invalid providers for admin notices
+						if ( strpos( $e->getMessage(), 'Incorrect API key' ) !== false || 
+						     strpos( $e->getMessage(), '401' ) !== false ) {
+							$this->invalid_providers[ $provider_id ] = 'Invalid API key';
+						} else {
+							$this->invalid_providers[ $provider_id ] = $e->getMessage();
+						}
+						error_log( 'WP AI SDK: Failed to check provider configuration for ' . $provider_id . ': ' . $e->getMessage() );
+						return false;
+					}
 				}
 			)
 		);
@@ -121,7 +142,7 @@ class Provider_Manager {
 				$model_id = 'gemini-2.5-flash';
 				break;
 			case 'openai':
-				$model_id = 'gpt-4-turbo';
+				$model_id = 'gpt-5-mini';
 				break;
 			default:
 				$model_id = '';
@@ -242,6 +263,76 @@ class Provider_Manager {
 	}
 
 	/**
+	 * Track a provider as invalid for admin notices.
+	 *
+	 * @since 0.1.0
+	 *
+	 * @param string $provider_id The provider ID.
+	 * @param string $error The error message.
+	 */
+	public function track_invalid_provider( string $provider_id, string $error ): void {
+		$this->invalid_providers[ $provider_id ] = $error;
+	}
+
+	/**
+	 * Display admin notices for invalid API keys.
+	 *
+	 * @since 0.1.0
+	 */
+	public function display_admin_notices(): void {
+		// Only show on admin pages
+		if ( ! is_admin() ) {
+			return;
+		}
+
+		// Check if we have any invalid providers
+		if ( empty( $this->invalid_providers ) ) {
+			return;
+		}
+
+		// Get current credentials to check which ones are actually set
+		$credentials = get_option( self::OPTION_PROVIDER_CREDENTIALS, array() );
+		
+		foreach ( $this->invalid_providers as $provider_id => $error ) {
+			// Only show notice if API key is actually configured
+			if ( ! isset( $credentials[ $provider_id ] ) || empty( $credentials[ $provider_id ] ) ) {
+				continue;
+			}
+
+			// Get proper provider name
+			$provider_names = array(
+				'openai' => 'OpenAI',
+				'anthropic' => 'Anthropic',
+				'google' => 'Google AI',
+			);
+			$provider_name = isset( $provider_names[ $provider_id ] ) ? $provider_names[ $provider_id ] : ucfirst( $provider_id );
+			$settings_url = admin_url( 'options-general.php?page=ai' );
+			
+			if ( $error === 'Invalid API key' ) {
+				?>
+				<div class="notice notice-error is-dismissible">
+					<p>
+						<strong><?php echo esc_html( $provider_name ); ?> API Error:</strong> 
+						The configured API key is invalid or has been revoked. 
+						<a href="<?php echo esc_url( $settings_url ); ?>">Update your API credentials</a> to use <?php echo esc_html( $provider_name ); ?>.
+					</p>
+				</div>
+				<?php
+			} else {
+				?>
+				<div class="notice notice-warning is-dismissible">
+					<p>
+						<strong><?php echo esc_html( $provider_name ); ?> Configuration Error:</strong> 
+						Unable to connect to the provider. 
+						<a href="<?php echo esc_url( $settings_url ); ?>">Check your settings</a>.
+					</p>
+				</div>
+				<?php
+			}
+		}
+	}
+
+	/**
 	 * Adds the provider settings screen to the WP Admin interface.
 	 *
 	 * @since 0.1.0
@@ -317,9 +408,17 @@ class Provider_Manager {
 		);
 
 		$current_provider_choices = array();
-		foreach ( $this->get_available_provider_ids() as $provider_id ) {
-			$provider_class_name                      = $registry->getProviderClassName( $provider_id );
-			$current_provider_choices[ $provider_id ] = $provider_class_name::metadata()->getName();
+		try {
+			foreach ( $this->get_available_provider_ids() as $provider_id ) {
+				try {
+					$provider_class_name                      = $registry->getProviderClassName( $provider_id );
+					$current_provider_choices[ $provider_id ] = $provider_class_name::metadata()->getName();
+				} catch ( \Exception $e ) {
+					error_log( 'WP AI SDK: Failed to get provider metadata for ' . $provider_id . ': ' . $e->getMessage() );
+				}
+			}
+		} catch ( \Exception $e ) {
+			error_log( 'WP AI SDK: Failed to get available providers for settings screen: ' . $e->getMessage() );
 		}
 
 		add_settings_field(

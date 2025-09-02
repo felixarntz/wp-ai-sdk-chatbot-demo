@@ -10,6 +10,7 @@ namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo;
 
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Providers\Provider_Manager;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\REST_Routes\Chatbot_Messages_REST_Route;
+use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Abilities;
 
 /**
  * Plugin main class.
@@ -97,6 +98,46 @@ class Plugin_Main {
 			}
 		);
 
+		// Initialize the Abilities API and register abilities
+		add_action(
+			'init',
+			function () {
+				error_log( "WP AI Chatbot: init hook called, initializing abilities registry" );
+				// Initialize the abilities registry (this triggers the abilities_api_init hook)
+				if ( class_exists( 'WP_Abilities_Registry' ) ) {
+					error_log( "WP AI Chatbot: WP_Abilities_Registry class exists, calling get_instance()" );
+					\WP_Abilities_Registry::get_instance();
+				} else {
+					error_log( "WP AI Chatbot: WP_Abilities_Registry class does not exist!" );
+				}
+			},
+			1
+		);
+
+		// Register abilities on the correct hook
+		add_action(
+			'abilities_api_init',
+			function () {
+				error_log( "WP AI Chatbot: abilities_api_init hook called" );
+				if ( function_exists( 'wp_register_ability' ) ) {
+					error_log( "WP AI Chatbot: wp_register_ability function exists, calling Abilities::register_all()" );
+					Abilities::register_all();
+				} else {
+					error_log( "WP AI Chatbot: wp_register_ability function does not exist in abilities_api_init hook!" );
+				}
+			}
+		);
+
+		// Initialize REST API endpoints for abilities
+		add_action(
+			'rest_api_init',
+			function () {
+				if ( class_exists( 'WP_REST_Abilities_Init' ) ) {
+					\WP_REST_Abilities_Init::register_routes();
+				}
+			}
+		);
+
 		// Add hook to register REST API route.
 		add_action(
 			'rest_api_init',
@@ -110,6 +151,21 @@ class Plugin_Main {
 			}
 		);
 
+		// Check providers and display admin notices for any issues
+		add_action(
+			'admin_init', 
+			function () {
+				// Always check providers to display notices about invalid keys
+				try {
+					$this->provider_manager->get_available_provider_ids();
+					// Hook up admin notices after checking providers
+					add_action( 'admin_notices', array( $this->provider_manager, 'display_admin_notices' ) );
+				} catch ( \Exception $e ) {
+					error_log( 'WP AI SDK: Failed to check available providers: ' . $e->getMessage() );
+				}
+			}
+		);
+
 		// Load the chatbot in WP Admin if the user has access.
 		add_action(
 			'admin_init',
@@ -119,8 +175,13 @@ class Plugin_Main {
 					return;
 				}
 
-				$available_provider_ids = $this->provider_manager->get_available_provider_ids();
-				if ( count( $available_provider_ids ) === 0 ) {
+				try {
+					$available_provider_ids = $this->provider_manager->get_available_provider_ids();
+					if ( count( $available_provider_ids ) === 0 ) {
+						return;
+					}
+				} catch ( \Exception $e ) {
+					error_log( 'WP AI SDK: Failed to check available providers in admin_init: ' . $e->getMessage() );
 					return;
 				}
 
@@ -129,13 +190,36 @@ class Plugin_Main {
 					'admin_enqueue_scripts',
 					function () {
 						$current_provider_id = $this->provider_manager->get_current_provider_id();
-						$script_config       = array(
-							'messagesRoute'           => 'wpaisdk-chatbot-demo/v1/messages',
-							'currentProviderMetadata' => $this->provider_manager->get_provider_metadata( $current_provider_id ),
-							'currentModelMetadata'    => $this->provider_manager->get_model_metadata(
+						
+						// Try to get provider and model metadata, but handle errors gracefully
+						$provider_metadata = null;
+						$model_metadata = null;
+						
+						try {
+							$provider_metadata = $this->provider_manager->get_provider_metadata( $current_provider_id );
+						} catch ( \Exception $e ) {
+							error_log( 'WP AI SDK: Failed to get provider metadata: ' . $e->getMessage() );
+						}
+						
+						try {
+							$model_metadata = $this->provider_manager->get_model_metadata(
 								$current_provider_id,
 								$this->provider_manager->get_preferred_model_id( $current_provider_id )
-							),
+							);
+						} catch ( \Exception $e ) {
+							error_log( 'WP AI SDK: Failed to get model metadata: ' . $e->getMessage() );
+							// Track this as an invalid provider for admin notice
+							if ( strpos( $e->getMessage(), 'Incorrect API key' ) !== false || 
+							     strpos( $e->getMessage(), '401' ) !== false ) {
+								// Access the invalid_providers array to show notice
+								$this->provider_manager->track_invalid_provider( $current_provider_id, 'Invalid API key' );
+							}
+						}
+						
+						$script_config = array(
+							'messagesRoute'           => 'wpaisdk-chatbot-demo/v1/messages',
+							'currentProviderMetadata' => $provider_metadata,
+							'currentModelMetadata'    => $model_metadata,
 						);
 
 						$manifest = require plugin_dir_path( $this->main_file ) . 'build/index.asset.php';
@@ -156,10 +240,20 @@ class Plugin_Main {
 							'after'
 						);
 
+						// Enqueue main CSS (includes Agenttic UI styles)
+						wp_enqueue_style(
+							'wp-ai-sdk-chatbot-demo-main',
+							plugin_dir_url( $this->main_file ) . 'build/index.css',
+							array(),
+							$manifest['version']
+						);
+						wp_style_add_data( 'wp-ai-sdk-chatbot-demo-main', 'path', plugin_dir_path( $this->main_file ) . 'build/index.css' );
+
+						// Enqueue component-specific styles
 						wp_enqueue_style(
 							'wp-ai-sdk-chatbot-demo',
 							plugin_dir_url( $this->main_file ) . 'build/style-index.css',
-							array(),
+							array( 'wp-ai-sdk-chatbot-demo-main' ),
 							$manifest['version']
 						);
 						wp_style_add_data( 'wp-ai-sdk-chatbot-demo', 'path', plugin_dir_path( $this->main_file ) . 'build/style-index.css' );
@@ -177,5 +271,53 @@ class Plugin_Main {
 				);
 			}
 		);
+
+		// Set up MCP Adapter integration
+		add_action(
+			'mcp_adapter_init',
+			function ( $adapter ) {
+				// Initialize MCP Adapter singleton if available
+				$mcp_adapter_class = 'Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WP\MCP\Core\McpAdapter';
+				if ( class_exists( $mcp_adapter_class ) ) {
+					$adapter->create_server(
+						'wp-ai-chatbot-demo',
+						'wp-ai-chatbot-demo/v1',
+						'mcp',
+						'WP AI Chatbot Demo MCP Server',
+						'MCP server exposing WordPress chatbot abilities',
+						'1.0.0',
+						array(
+							'Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WP\MCP\Transport\Http\RestTransport',
+						),
+						'Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WP\MCP\Infrastructure\ErrorHandling\ErrorLogMcpErrorHandler',
+						'Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WP\MCP\Infrastructure\Observability\NullMcpObservabilityHandler',
+						array(
+							'wp-ai-chatbot-demo/list-capabilities',
+							'wp-ai-chatbot-demo/get-post',
+							'wp-ai-chatbot-demo/create-post-draft',
+							'wp-ai-chatbot-demo/search-posts',
+							'wp-ai-chatbot-demo/publish-post',
+							'wp-ai-chatbot-demo/set-permalink-structure',
+							'wp-ai-chatbot-demo/generate-post-featured-image',
+						),
+						array(),
+						array()
+					);
+				}
+			}
+		);
+
+		// Initialize MCP Adapter singleton early
+		add_action(
+			'init',
+			function () {
+				$mcp_adapter_class = 'Felix_Arntz\WP_AI_SDK_Chatbot_Demo_Dependencies\WP\MCP\Core\McpAdapter';
+				if ( class_exists( $mcp_adapter_class ) ) {
+					$mcp_adapter_class::instance();
+				}
+			},
+			5
+		);
 	}
+
 }
