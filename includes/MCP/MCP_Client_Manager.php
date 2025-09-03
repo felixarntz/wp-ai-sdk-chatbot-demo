@@ -22,13 +22,6 @@ class MCP_Client_Manager {
 	protected const OPTION_MCP_CLIENTS = 'wpaisdk_mcp_clients';
 	
 	/**
-	 * Available MCP client configurations.
-	 *
-	 * @var array
-	 */
-	protected array $available_clients = array();
-	
-	/**
 	 * Active MCP client instances.
 	 *
 	 * @var array<string, McpClient>
@@ -39,24 +32,7 @@ class MCP_Client_Manager {
 	 * Constructor.
 	 */
 	public function __construct() {
-		$this->available_clients = array(
-			'wpcom-domains' => array(
-				'name'        => 'WordPress.com Domains',
-				'description' => 'Access WordPress.com domain management capabilities',
-				'server_url'  => 'https://public-api.wordpress.com/wpcom/v2/mcp',
-				'transport'   => 'mcp',
-				'requires'    => array( 'api_key' ),
-				'capabilities' => array( 'domains', 'dns' ),
-			),
-			'custom' => array(
-				'name'        => 'Custom MCP Server',
-				'description' => 'Connect to a custom MCP server',
-				'server_url'  => '',
-				'transport'   => 'mcp',
-				'requires'    => array( 'server_url' ),
-				'capabilities' => array(),
-			),
-		);
+		// No presets - all clients are custom
 	}
 	
 	/**
@@ -95,7 +71,14 @@ class MCP_Client_Manager {
 				continue;
 			}
 			
+			// Skip if marked for deletion or empty
+			if ( ! empty( $config['delete'] ) || 
+			     ( empty( $config['name'] ) && empty( $config['server_url'] ) ) ) {
+				continue;
+			}
+			
 			$sanitized[ $client_id ] = array(
+				'name'       => isset( $config['name'] ) ? sanitize_text_field( $config['name'] ) : '',
 				'enabled'    => ! empty( $config['enabled'] ),
 				'server_url' => isset( $config['server_url'] ) ? esc_url_raw( $config['server_url'] ) : '',
 				'api_key'    => isset( $config['api_key'] ) ? sanitize_text_field( $config['api_key'] ) : '',
@@ -134,14 +117,8 @@ class MCP_Client_Manager {
 	 */
 	public function connect_client( string $client_id, array $config ): bool {
 		try {
-			// Get server URL
-			$server_url = '';
-			if ( isset( $this->available_clients[ $client_id ] ) ) {
-				$server_url = $this->available_clients[ $client_id ]['server_url'];
-			}
-			if ( ! empty( $config['server_url'] ) ) {
-				$server_url = $config['server_url'];
-			}
+			// Get server URL from config
+			$server_url = ! empty( $config['server_url'] ) ? $config['server_url'] : '';
 			
 			if ( empty( $server_url ) ) {
 				return false;
@@ -242,14 +219,8 @@ class MCP_Client_Manager {
 	 */
 	public function test_connection( string $client_id, array $config ): array {
 		try {
-			// Get server URL
-			$server_url = '';
-			if ( isset( $this->available_clients[ $client_id ] ) ) {
-				$server_url = $this->available_clients[ $client_id ]['server_url'];
-			}
-			if ( ! empty( $config['server_url'] ) ) {
-				$server_url = $config['server_url'];
-			}
+			// Get server URL from config
+			$server_url = ! empty( $config['server_url'] ) ? $config['server_url'] : '';
 			
 			if ( empty( $server_url ) ) {
 				return array(
@@ -313,15 +284,6 @@ class MCP_Client_Manager {
 				),
 			);
 		}
-	}
-	
-	/**
-	 * Get available MCP clients.
-	 *
-	 * @return array Available client configurations.
-	 */
-	public function get_available_clients(): array {
-		return $this->available_clients;
 	}
 	
 	/**

@@ -476,59 +476,112 @@ class Provider_Manager {
 		add_settings_section(
 			'mcp-clients',
 			__( 'MCP Client Connections', 'wp-ai-sdk-chatbot-demo' ),
-			static function () {
-				?>
-				<p class="description">
-					<?php esc_html_e( 'Connect to external MCP servers to use their capabilities within WordPress.', 'wp-ai-sdk-chatbot-demo' ); ?>
-				</p>
-				<?php
-			},
+			array( $this, 'render_mcp_clients_section' ),
 			'ai-settings'
 		);
 		
-		if ( $this->mcp_client_manager ) {
-			$available_clients = $this->mcp_client_manager->get_available_clients();
-			$configured_clients = $this->mcp_client_manager->get_configured_clients();
-			
-			foreach ( $available_clients as $client_id => $client_info ) {
-				$field_id = "mcp-client-{$client_id}";
-				$config = isset( $configured_clients[ $client_id ] ) ? $configured_clients[ $client_id ] : array();
-				
-				add_settings_field(
-					$field_id,
-					$client_info['name'],
-					array( $this, 'render_mcp_client_field' ),
-					'ai-settings',
-					'mcp-clients',
-					array(
-						'client_id'   => $client_id,
-						'client_info' => $client_info,
-						'config'      => $config,
-					)
-				);
-			}
-		}
+		// Add a single field that will contain all MCP clients
+		add_settings_field(
+			'mcp-clients-list',
+			'',
+			array( $this, 'render_mcp_clients_list' ),
+			'ai-settings',
+			'mcp-clients'
+		);
 	}
 	
 	/**
-	 * Render MCP client configuration field.
+	 * Render MCP clients section description.
+	 *
+	 * @since 0.1.0
+	 */
+	public function render_mcp_clients_section(): void {
+		?>
+		<p class="description">
+			<?php esc_html_e( 'Connect to external MCP servers to use their capabilities within WordPress. You can add multiple MCP client connections.', 'wp-ai-sdk-chatbot-demo' ); ?>
+		</p>
+		<?php
+	}
+	
+	/**
+	 * Render MCP clients list.
+	 *
+	 * @since 0.1.0
+	 */
+	public function render_mcp_clients_list(): void {
+		$configured_clients = array();
+		if ( $this->mcp_client_manager ) {
+			$configured_clients = $this->mcp_client_manager->get_configured_clients();
+		}
+		?>
+		<div id="mcp-clients-container">
+			<?php
+			$index = 0;
+			if ( ! empty( $configured_clients ) ) {
+				foreach ( $configured_clients as $client_id => $config ) {
+					$this->render_mcp_client_form( $client_id, $config, $index );
+					$index++;
+				}
+			} else {
+				// Show at least one empty form
+				$this->render_mcp_client_form( 'client_0', array(), 0 );
+			}
+			?>
+		</div>
+		
+		<button type="button" id="add-mcp-client" class="button button-secondary" style="margin-top: 10px;">
+			<?php esc_html_e( '+ Add MCP Client', 'wp-ai-sdk-chatbot-demo' ); ?>
+		</button>
+		
+		<template id="mcp-client-template">
+			<?php $this->render_mcp_client_form( '__CLIENT_ID__', array(), '__INDEX__' ); ?>
+		</template>
+		<?php
+	}
+	
+	/**
+	 * Render individual MCP client form.
 	 *
 	 * @since 0.1.0
 	 *
-	 * @param array $args Field arguments.
+	 * @param string $client_id Client ID.
+	 * @param array  $config    Client configuration.
+	 * @param mixed  $index     Client index for display.
 	 */
-	public function render_mcp_client_field( array $args ): void {
-		$client_id = $args['client_id'];
-		$client_info = $args['client_info'];
-		$config = $args['config'];
+	public function render_mcp_client_form( string $client_id, array $config, $index ): void {
 		$enabled = ! empty( $config['enabled'] );
+		$name = $config['name'] ?? '';
+		$server_url = $config['server_url'] ?? '';
+		$api_key = $config['api_key'] ?? '';
 		?>
-		<div style="border: 1px solid #c3c4c7; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
-			<p style="margin-top: 0;">
-				<em><?php echo esc_html( $client_info['description'] ); ?></em>
-			</p>
+		<div class="mcp-client-item" data-client-id="<?php echo esc_attr( $client_id ); ?>" style="border: 1px solid #c3c4c7; padding: 15px; border-radius: 4px; margin-bottom: 20px; position: relative;">
+			<button type="button" class="remove-mcp-client" style="position: absolute; top: 10px; right: 10px; background: #dc3232; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">
+				<?php esc_html_e( 'Remove', 'wp-ai-sdk-chatbot-demo' ); ?>
+			</button>
 			
-			<table class="form-table" role="presentation">
+			<h4 style="margin-top: 0;">
+				<?php echo esc_html( $name ?: sprintf( __( 'MCP Client %s', 'wp-ai-sdk-chatbot-demo' ), $index + 1 ) ); ?>
+			</h4>
+			
+			<table class="form-table" role="presentation" style="margin-top: 0;">
+				<tr>
+					<th scope="row">
+						<label for="mcp-<?php echo esc_attr( $client_id ); ?>-name">
+							<?php esc_html_e( 'Name', 'wp-ai-sdk-chatbot-demo' ); ?>
+						</label>
+					</th>
+					<td>
+						<input
+							type="text"
+							id="mcp-<?php echo esc_attr( $client_id ); ?>-name"
+							name="wpaisdk_mcp_clients[<?php echo esc_attr( $client_id ); ?>][name]"
+							value="<?php echo esc_attr( $name ); ?>"
+							class="regular-text mcp-client-name"
+							placeholder="<?php esc_attr_e( 'e.g., WordPress.com Domains', 'wp-ai-sdk-chatbot-demo' ); ?>"
+						/>
+					</td>
+				</tr>
+				
 				<tr>
 					<th scope="row">
 						<label for="mcp-<?php echo esc_attr( $client_id ); ?>-enabled">
@@ -546,7 +599,6 @@ class Provider_Manager {
 					</td>
 				</tr>
 				
-				<?php if ( 'custom' === $client_id || empty( $client_info['server_url'] ) ) : ?>
 				<tr>
 					<th scope="row">
 						<label for="mcp-<?php echo esc_attr( $client_id ); ?>-server-url">
@@ -558,19 +610,18 @@ class Provider_Manager {
 							type="url"
 							id="mcp-<?php echo esc_attr( $client_id ); ?>-server-url"
 							name="wpaisdk_mcp_clients[<?php echo esc_attr( $client_id ); ?>][server_url]"
-							value="<?php echo esc_attr( $config['server_url'] ?? '' ); ?>"
+							value="<?php echo esc_attr( $server_url ); ?>"
 							class="regular-text"
 							placeholder="https://example.com/mcp"
+							required
 						/>
 					</td>
 				</tr>
-				<?php endif; ?>
 				
-				<?php if ( in_array( 'api_key', $client_info['requires'] ?? array(), true ) ) : ?>
 				<tr>
 					<th scope="row">
 						<label for="mcp-<?php echo esc_attr( $client_id ); ?>-api-key">
-							<?php esc_html_e( 'API Key', 'wp-ai-sdk-chatbot-demo' ); ?>
+							<?php esc_html_e( 'API Key (optional)', 'wp-ai-sdk-chatbot-demo' ); ?>
 						</label>
 					</th>
 					<td>
@@ -578,20 +629,20 @@ class Provider_Manager {
 							type="password"
 							id="mcp-<?php echo esc_attr( $client_id ); ?>-api-key"
 							name="wpaisdk_mcp_clients[<?php echo esc_attr( $client_id ); ?>][api_key]"
-							value="<?php echo esc_attr( $config['api_key'] ?? '' ); ?>"
+							value="<?php echo esc_attr( $api_key ); ?>"
 							class="regular-text"
+							placeholder="<?php esc_attr_e( 'Enter API key if required', 'wp-ai-sdk-chatbot-demo' ); ?>"
 						/>
 					</td>
 				</tr>
-				<?php endif; ?>
 				
 				<tr>
 					<th scope="row"></th>
 					<td>
 						<button
 							type="button"
-							class="button button-secondary"
-							onclick="testMcpConnection('<?php echo esc_js( $client_id ); ?>')"
+							class="button button-secondary test-mcp-connection"
+							data-client-id="<?php echo esc_attr( $client_id ); ?>"
 						>
 							<?php esc_html_e( 'Test Connection', 'wp-ai-sdk-chatbot-demo' ); ?>
 						</button>
@@ -632,47 +683,129 @@ class Provider_Manager {
 			</form>
 			
 			<script>
-			function testMcpConnection(clientId) {
-				const resultSpan = document.getElementById('mcp-test-' + clientId + '-result');
-				resultSpan.innerHTML = '<span style="color: #666;"><?php esc_html_e( 'Testing...', 'wp-ai-sdk-chatbot-demo' ); ?></span>';
+			(function() {
+				let clientCounter = <?php echo count( $this->mcp_client_manager ? $this->mcp_client_manager->get_configured_clients() : array() ); ?>;
 				
-				const formData = new FormData();
-				formData.append('action', 'test_mcp_connection');
-				formData.append('client_id', clientId);
-				formData.append('nonce', '<?php echo wp_create_nonce( 'test_mcp_connection' ); ?>');
-				
-				// Get current form values
-				const enabled = document.getElementById('mcp-' + clientId + '-enabled');
-				if (enabled && enabled.checked) {
-					formData.append('enabled', '1');
-				}
-				
-				const serverUrl = document.getElementById('mcp-' + clientId + '-server-url');
-				if (serverUrl) {
-					formData.append('server_url', serverUrl.value);
-				}
-				
-				const apiKey = document.getElementById('mcp-' + clientId + '-api-key');
-				if (apiKey) {
-					formData.append('api_key', apiKey.value);
-				}
-				
-				fetch('<?php echo admin_url( 'admin-ajax.php' ); ?>', {
-					method: 'POST',
-					body: formData
-				})
-				.then(response => response.json())
-				.then(data => {
-					if (data.success) {
-						resultSpan.innerHTML = '<span style="color: green;">✓ ' + data.data.message + '</span>';
-					} else {
-						resultSpan.innerHTML = '<span style="color: red;">✗ ' + (data.data ? data.data.message : 'Connection failed') + '</span>';
-					}
-				})
-				.catch(error => {
-					resultSpan.innerHTML = '<span style="color: red;">✗ <?php esc_html_e( 'Connection test failed', 'wp-ai-sdk-chatbot-demo' ); ?></span>';
+				// Add new client
+				const addButton = document.getElementById('add-mcp-client');
+				if (addButton) {
+					addButton.addEventListener('click', function() {
+					const template = document.getElementById('mcp-client-template');
+					const container = document.getElementById('mcp-clients-container');
+					const newClientId = 'client_' + Date.now();
+					
+					// Clone template content
+					let newClient = template.content.cloneNode(true);
+					let html = newClient.querySelector('.mcp-client-item').outerHTML;
+					
+					// Replace placeholders
+					html = html.replace(/__CLIENT_ID__/g, newClientId);
+					html = html.replace(/__INDEX__/g, clientCounter);
+					
+					// Create element and append
+					const div = document.createElement('div');
+					div.innerHTML = html;
+					container.appendChild(div.firstElementChild);
+					
+					clientCounter++;
+					
+					// Update title for new client
+					const newItem = container.lastElementChild;
+					const nameInput = newItem.querySelector('.mcp-client-name');
+					nameInput.addEventListener('input', updateClientTitle);
 				});
-			}
+				}
+				
+				// Remove client
+				document.addEventListener('click', function(e) {
+					if (e.target.classList.contains('remove-mcp-client')) {
+						if (confirm('<?php esc_html_e( 'Remove this MCP client?', 'wp-ai-sdk-chatbot-demo' ); ?>')) {
+							e.target.closest('.mcp-client-item').remove();
+							updateClientNumbers();
+						}
+					}
+				});
+				
+				// Test connection
+				document.addEventListener('click', function(e) {
+					if (e.target.classList.contains('test-mcp-connection')) {
+						const clientItem = e.target.closest('.mcp-client-item');
+						const clientId = clientItem.dataset.clientId;
+						testMcpConnection(clientId);
+					}
+				});
+				
+				// Update client title on name change
+				document.querySelectorAll('.mcp-client-name').forEach(input => {
+					input.addEventListener('input', updateClientTitle);
+				});
+				
+				function updateClientTitle(e) {
+					const clientItem = e.target.closest('.mcp-client-item');
+					const title = clientItem.querySelector('h4');
+					const name = e.target.value;
+					const index = Array.from(clientItem.parentNode.children).indexOf(clientItem);
+					title.textContent = name || '<?php echo esc_js( __( 'MCP Client', 'wp-ai-sdk-chatbot-demo' ) ); ?> ' + (index + 1);
+				}
+				
+				function updateClientNumbers() {
+					document.querySelectorAll('.mcp-client-item').forEach((item, index) => {
+						const title = item.querySelector('h4');
+						const nameInput = item.querySelector('.mcp-client-name');
+						if (!nameInput.value) {
+							title.textContent = '<?php echo esc_js( __( 'MCP Client', 'wp-ai-sdk-chatbot-demo' ) ); ?> ' + (index + 1);
+						}
+					});
+				}
+				
+				function testMcpConnection(clientId) {
+					const clientItem = document.querySelector('[data-client-id="' + clientId + '"]');
+					const resultSpan = document.getElementById('mcp-test-' + clientId + '-result');
+					resultSpan.innerHTML = '<span style="color: #666;"><?php esc_html_e( 'Testing...', 'wp-ai-sdk-chatbot-demo' ); ?></span>';
+					
+					const formData = new FormData();
+					formData.append('action', 'test_mcp_connection');
+					formData.append('client_id', clientId);
+					formData.append('nonce', '<?php echo wp_create_nonce( 'test_mcp_connection' ); ?>');
+					
+					// Get current form values
+					const nameInput = clientItem.querySelector('input[name*="[name]"]');
+					if (nameInput) {
+						formData.append('name', nameInput.value);
+					}
+					
+					const enabled = clientItem.querySelector('input[name*="[enabled]"]');
+					if (enabled && enabled.checked) {
+						formData.append('enabled', '1');
+					}
+					
+					const serverUrl = clientItem.querySelector('input[name*="[server_url]"]');
+					if (serverUrl) {
+						formData.append('server_url', serverUrl.value);
+					}
+					
+					const apiKey = clientItem.querySelector('input[name*="[api_key]"]');
+					if (apiKey) {
+						formData.append('api_key', apiKey.value);
+					}
+					
+					fetch('<?php echo admin_url( 'admin-ajax.php' ); ?>', {
+						method: 'POST',
+						body: formData
+					})
+					.then(response => response.json())
+					.then(data => {
+						if (data.success) {
+							resultSpan.innerHTML = '<span style="color: green;">✓ ' + data.data.message + '</span>';
+						} else {
+							resultSpan.innerHTML = '<span style="color: red;">✗ ' + (data.data ? data.data.message : 'Connection failed') + '</span>';
+						}
+					})
+					.catch(error => {
+						resultSpan.innerHTML = '<span style="color: red;">✗ <?php esc_html_e( 'Connection test failed', 'wp-ai-sdk-chatbot-demo' ); ?></span>';
+					});
+				}
+			})();
 			</script>
 		</div>
 		<?php
