@@ -8,6 +8,7 @@
 
 namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Providers;
 
+use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\MCP\MCP_Client_Manager;
 use WordPress\AiClient\AiClient;
 use WordPress\AiClient\Providers\DTO\ProviderMetadata;
 use WordPress\AiClient\Providers\Http\DTO\ApiKeyRequestAuthentication;
@@ -50,6 +51,15 @@ class Provider_Manager {
 	protected array $invalid_providers = array();
 
 	/**
+	 * MCP Client Manager instance.
+	 *
+	 * @since 0.1.0
+	 *
+	 * @var MCP_Client_Manager|null
+	 */
+	protected ?MCP_Client_Manager $mcp_client_manager = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @since 0.1.0
@@ -58,6 +68,7 @@ class Provider_Manager {
 	 */
 	public function __construct( array $provider_ids ) {
 		$this->provider_ids = $provider_ids;
+		$this->mcp_client_manager = new MCP_Client_Manager();
 	}
 
 	/**
@@ -191,6 +202,11 @@ class Provider_Manager {
 	 * @since 0.1.0
 	 */
 	public function initialize_provider_credentials(): void {
+		// Initialize MCP clients
+		if ( $this->mcp_client_manager ) {
+			$this->mcp_client_manager->initialize();
+		}
+		
 		register_setting(
 			'ai-settings',
 			self::OPTION_PROVIDER_CREDENTIALS,
@@ -349,6 +365,9 @@ class Provider_Manager {
 			"load-{$hook_suffix}",
 			array( $this, 'initialize_settings_screen' )
 		);
+		
+		// Add AJAX handlers for MCP testing
+		add_action( 'wp_ajax_test_mcp_connection', array( $this, 'ajax_test_mcp_connection' ) );
 	}
 
 	/**
@@ -357,6 +376,22 @@ class Provider_Manager {
 	 * @since 0.1.0
 	 */
 	public function initialize_settings_screen(): void {
+		// Get current tab
+		$current_tab = isset( $_GET['tab'] ) ? sanitize_text_field( $_GET['tab'] ) : 'providers';
+		
+		if ( 'mcp' === $current_tab ) {
+			$this->initialize_mcp_settings();
+		} else {
+			$this->initialize_provider_settings();
+		}
+	}
+	
+	/**
+	 * Initialize provider settings sections and fields.
+	 *
+	 * @since 0.1.0
+	 */
+	protected function initialize_provider_settings(): void {
 		add_settings_section(
 			'provider-credentials',
 			__( 'API Credentials', 'wp-ai-sdk-chatbot-demo' ),
@@ -433,22 +468,212 @@ class Provider_Manager {
 	}
 
 	/**
+	 * Initialize MCP client settings.
+	 *
+	 * @since 0.1.0
+	 */
+	protected function initialize_mcp_settings(): void {
+		add_settings_section(
+			'mcp-clients',
+			__( 'MCP Client Connections', 'wp-ai-sdk-chatbot-demo' ),
+			static function () {
+				?>
+				<p class="description">
+					<?php esc_html_e( 'Connect to external MCP servers to use their capabilities within WordPress.', 'wp-ai-sdk-chatbot-demo' ); ?>
+				</p>
+				<?php
+			},
+			'ai-settings'
+		);
+		
+		if ( $this->mcp_client_manager ) {
+			$available_clients = $this->mcp_client_manager->get_available_clients();
+			$configured_clients = $this->mcp_client_manager->get_configured_clients();
+			
+			foreach ( $available_clients as $client_id => $client_info ) {
+				$field_id = "mcp-client-{$client_id}";
+				$config = isset( $configured_clients[ $client_id ] ) ? $configured_clients[ $client_id ] : array();
+				
+				add_settings_field(
+					$field_id,
+					$client_info['name'],
+					array( $this, 'render_mcp_client_field' ),
+					'ai-settings',
+					'mcp-clients',
+					array(
+						'client_id'   => $client_id,
+						'client_info' => $client_info,
+						'config'      => $config,
+					)
+				);
+			}
+		}
+	}
+	
+	/**
+	 * Render MCP client configuration field.
+	 *
+	 * @since 0.1.0
+	 *
+	 * @param array $args Field arguments.
+	 */
+	public function render_mcp_client_field( array $args ): void {
+		$client_id = $args['client_id'];
+		$client_info = $args['client_info'];
+		$config = $args['config'];
+		$enabled = ! empty( $config['enabled'] );
+		?>
+		<div style="border: 1px solid #c3c4c7; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+			<p style="margin-top: 0;">
+				<em><?php echo esc_html( $client_info['description'] ); ?></em>
+			</p>
+			
+			<table class="form-table" role="presentation">
+				<tr>
+					<th scope="row">
+						<label for="mcp-<?php echo esc_attr( $client_id ); ?>-enabled">
+							<?php esc_html_e( 'Enable', 'wp-ai-sdk-chatbot-demo' ); ?>
+						</label>
+					</th>
+					<td>
+						<input
+							type="checkbox"
+							id="mcp-<?php echo esc_attr( $client_id ); ?>-enabled"
+							name="wpaisdk_mcp_clients[<?php echo esc_attr( $client_id ); ?>][enabled]"
+							value="1"
+							<?php checked( $enabled ); ?>
+						/>
+					</td>
+				</tr>
+				
+				<?php if ( 'custom' === $client_id || empty( $client_info['server_url'] ) ) : ?>
+				<tr>
+					<th scope="row">
+						<label for="mcp-<?php echo esc_attr( $client_id ); ?>-server-url">
+							<?php esc_html_e( 'Server URL', 'wp-ai-sdk-chatbot-demo' ); ?>
+						</label>
+					</th>
+					<td>
+						<input
+							type="url"
+							id="mcp-<?php echo esc_attr( $client_id ); ?>-server-url"
+							name="wpaisdk_mcp_clients[<?php echo esc_attr( $client_id ); ?>][server_url]"
+							value="<?php echo esc_attr( $config['server_url'] ?? '' ); ?>"
+							class="regular-text"
+							placeholder="https://example.com/mcp"
+						/>
+					</td>
+				</tr>
+				<?php endif; ?>
+				
+				<?php if ( in_array( 'api_key', $client_info['requires'] ?? array(), true ) ) : ?>
+				<tr>
+					<th scope="row">
+						<label for="mcp-<?php echo esc_attr( $client_id ); ?>-api-key">
+							<?php esc_html_e( 'API Key', 'wp-ai-sdk-chatbot-demo' ); ?>
+						</label>
+					</th>
+					<td>
+						<input
+							type="password"
+							id="mcp-<?php echo esc_attr( $client_id ); ?>-api-key"
+							name="wpaisdk_mcp_clients[<?php echo esc_attr( $client_id ); ?>][api_key]"
+							value="<?php echo esc_attr( $config['api_key'] ?? '' ); ?>"
+							class="regular-text"
+						/>
+					</td>
+				</tr>
+				<?php endif; ?>
+				
+				<tr>
+					<th scope="row"></th>
+					<td>
+						<button
+							type="button"
+							class="button button-secondary"
+							onclick="testMcpConnection('<?php echo esc_js( $client_id ); ?>')"
+						>
+							<?php esc_html_e( 'Test Connection', 'wp-ai-sdk-chatbot-demo' ); ?>
+						</button>
+						<span id="mcp-test-<?php echo esc_attr( $client_id ); ?>-result" style="margin-left: 10px;"></span>
+					</td>
+				</tr>
+			</table>
+		</div>
+		<?php
+	}
+	
+	/**
 	 * Renders the provider settings screen.
 	 *
 	 * @since 0.1.0
 	 */
 	public function render_settings_screen(): void {
+		$current_tab = isset( $_GET['tab'] ) ? sanitize_text_field( $_GET['tab'] ) : 'providers';
 		?>
 		<div class="wrap">
 			<h1>
 				<?php esc_html_e( 'AI Settings', 'wp-ai-sdk-chatbot-demo' ); ?>
 			</h1>
+			
+			<nav class="nav-tab-wrapper" aria-label="<?php esc_attr_e( 'Secondary menu', 'wp-ai-sdk-chatbot-demo' ); ?>">
+				<a href="?page=ai&tab=providers" class="nav-tab <?php echo 'providers' === $current_tab ? 'nav-tab-active' : ''; ?>">
+					<?php esc_html_e( 'AI Providers', 'wp-ai-sdk-chatbot-demo' ); ?>
+				</a>
+				<a href="?page=ai&tab=mcp" class="nav-tab <?php echo 'mcp' === $current_tab ? 'nav-tab-active' : ''; ?>">
+					<?php esc_html_e( 'MCP Clients', 'wp-ai-sdk-chatbot-demo' ); ?>
+				</a>
+			</nav>
 
 			<form action="options.php" method="post">
 				<?php settings_fields( 'ai-settings' ); ?>
 				<?php do_settings_sections( 'ai-settings' ); ?>
 				<?php submit_button(); ?>
 			</form>
+			
+			<script>
+			function testMcpConnection(clientId) {
+				const resultSpan = document.getElementById('mcp-test-' + clientId + '-result');
+				resultSpan.innerHTML = '<span style="color: #666;"><?php esc_html_e( 'Testing...', 'wp-ai-sdk-chatbot-demo' ); ?></span>';
+				
+				const formData = new FormData();
+				formData.append('action', 'test_mcp_connection');
+				formData.append('client_id', clientId);
+				formData.append('nonce', '<?php echo wp_create_nonce( 'test_mcp_connection' ); ?>');
+				
+				// Get current form values
+				const enabled = document.getElementById('mcp-' + clientId + '-enabled');
+				if (enabled && enabled.checked) {
+					formData.append('enabled', '1');
+				}
+				
+				const serverUrl = document.getElementById('mcp-' + clientId + '-server-url');
+				if (serverUrl) {
+					formData.append('server_url', serverUrl.value);
+				}
+				
+				const apiKey = document.getElementById('mcp-' + clientId + '-api-key');
+				if (apiKey) {
+					formData.append('api_key', apiKey.value);
+				}
+				
+				fetch('<?php echo admin_url( 'admin-ajax.php' ); ?>', {
+					method: 'POST',
+					body: formData
+				})
+				.then(response => response.json())
+				.then(data => {
+					if (data.success) {
+						resultSpan.innerHTML = '<span style="color: green;">✓ ' + data.data.message + '</span>';
+					} else {
+						resultSpan.innerHTML = '<span style="color: red;">✗ ' + (data.data ? data.data.message : 'Connection failed') + '</span>';
+					}
+				})
+				.catch(error => {
+					resultSpan.innerHTML = '<span style="color: red;">✗ <?php esc_html_e( 'Connection test failed', 'wp-ai-sdk-chatbot-demo' ); ?></span>';
+				});
+			}
+			</script>
 		</div>
 		<?php
 	}
@@ -514,6 +739,48 @@ class Provider_Manager {
 				class="regular-text"
 			>
 			<?php
+		}
+	}
+	
+	/**
+	 * AJAX handler for testing MCP connections.
+	 *
+	 * @since 0.1.0
+	 */
+	public function ajax_test_mcp_connection(): void {
+		// Verify nonce
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'test_mcp_connection' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid nonce', 'wp-ai-sdk-chatbot-demo' ) ) );
+		}
+		
+		// Check permissions
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Insufficient permissions', 'wp-ai-sdk-chatbot-demo' ) ) );
+		}
+		
+		$client_id = isset( $_POST['client_id'] ) ? sanitize_text_field( $_POST['client_id'] ) : '';
+		
+		if ( empty( $client_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid client ID', 'wp-ai-sdk-chatbot-demo' ) ) );
+		}
+		
+		// Get configuration from POST data
+		$config = array(
+			'enabled'    => ! empty( $_POST['enabled'] ),
+			'server_url' => isset( $_POST['server_url'] ) ? esc_url_raw( $_POST['server_url'] ) : '',
+			'api_key'    => isset( $_POST['api_key'] ) ? sanitize_text_field( $_POST['api_key'] ) : '',
+		);
+		
+		if ( $this->mcp_client_manager ) {
+			$result = $this->mcp_client_manager->test_connection( $client_id, $config );
+			
+			if ( $result['success'] ) {
+				wp_send_json_success( $result );
+			} else {
+				wp_send_json_error( $result );
+			}
+		} else {
+			wp_send_json_error( array( 'message' => __( 'MCP Client Manager not initialized', 'wp-ai-sdk-chatbot-demo' ) ) );
 		}
 	}
 }
