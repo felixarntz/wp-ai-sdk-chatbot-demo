@@ -767,7 +767,7 @@ class Provider_Manager {
 			</form>
 			
 			<script>
-			(function() {
+			document.addEventListener('DOMContentLoaded', function() {
 				let clientCounter = <?php echo count( $this->mcp_client_manager ? $this->mcp_client_manager->get_configured_clients() : array() ); ?>;
 				
 				// Add new client
@@ -841,7 +841,7 @@ class Provider_Manager {
 						}
 					});
 				}
-			})();
+			});
 			</script>
 		</div>
 		<?php
