@@ -226,6 +226,17 @@ class Provider_Manager {
 				},
 			)
 		);
+		
+		// Register Jina API key setting
+		register_setting(
+			'ai-settings',
+			'wpaisdk_jina_api_key',
+			array(
+				'type'              => 'string',
+				'default'           => '',
+				'sanitize_callback' => 'sanitize_text_field',
+			)
+		);
 
 		$current_credentials = get_option( self::OPTION_PROVIDER_CREDENTIALS );
 		if ( ! is_array( $current_credentials ) ) {
@@ -376,9 +387,16 @@ class Provider_Manager {
 	 * @since 0.1.0
 	 */
 	public function initialize_settings_screen(): void {
-		// Always register both tabs' settings
-		$this->initialize_provider_settings();
-		$this->initialize_mcp_settings();
+		// Get current tab to only register appropriate settings
+		$current_tab = isset( $_GET['tab'] ) ? sanitize_text_field( $_GET['tab'] ) : 'providers';
+		
+		if ( 'mcp' === $current_tab ) {
+			// Only initialize MCP settings for MCP tab
+			$this->initialize_mcp_settings();
+		} else {
+			// Only initialize provider settings for providers tab
+			$this->initialize_provider_settings();
+		}
 	}
 	
 	/**
@@ -418,6 +436,22 @@ class Provider_Manager {
 				)
 			);
 		}
+		
+		// Add Jina AI API key field
+		add_settings_field(
+			'jina-api-key',
+			__( 'Jina AI Reader', 'wp-ai-sdk-chatbot-demo' ),
+			array( $this, 'render_settings_field' ),
+			'ai-settings',
+			'provider-credentials',
+			array(
+				'type'        => 'password',
+				'label_for'   => 'jina-api-key',
+				'id'          => 'jina-api-key',
+				'name'        => 'wpaisdk_jina_api_key',
+				'description' => __( 'API key for Jina AI Reader to fetch and convert web pages to markdown. Get one at https://jina.ai', 'wp-ai-sdk-chatbot-demo' ),
+			)
+		);
 
 		add_settings_section(
 			'provider-preferences',
@@ -635,16 +669,27 @@ class Provider_Manager {
 				</tr>
 				
 				<tr>
-					<th scope="row"></th>
+					<th scope="row">
+						<label>
+							<?php esc_html_e( 'Connection Status', 'wp-ai-sdk-chatbot-demo' ); ?>
+						</label>
+					</th>
 					<td>
-						<button
-							type="button"
-							class="button button-secondary test-mcp-connection"
-							data-client-id="<?php echo esc_attr( $client_id ); ?>"
-						>
-							<?php esc_html_e( 'Test Connection', 'wp-ai-sdk-chatbot-demo' ); ?>
-						</button>
-						<span id="mcp-test-<?php echo esc_attr( $client_id ); ?>-result" style="margin-left: 10px;"></span>
+						<?php
+						// Test connection status on render if enabled
+						if ( $enabled && ! empty( $server_url ) ) {
+							$test_result = $this->mcp_client_manager->test_connection( $client_id, $config );
+							if ( $test_result['success'] ) {
+								echo '<span style="color: green;">✓ ' . esc_html( $test_result['message'] ) . '</span>';
+							} else {
+								echo '<span style="color: red;">✗ ' . esc_html( $test_result['message'] ) . '</span>';
+							}
+						} elseif ( ! $enabled ) {
+							echo '<span style="color: gray;">' . esc_html__( 'Disabled', 'wp-ai-sdk-chatbot-demo' ) . '</span>';
+						} else {
+							echo '<span style="color: gray;">' . esc_html__( 'Not configured', 'wp-ai-sdk-chatbot-demo' ) . '</span>';
+						}
+						?>
 					</td>
 				</tr>
 			</table>
@@ -677,18 +722,41 @@ class Provider_Manager {
 			<form action="options.php" method="post">
 				<?php settings_fields( 'ai-settings' ); ?>
 				<?php 
-				// Conditionally show content based on current tab
+				// Add hidden fields to preserve values from other tabs
 				if ( 'mcp' === $current_tab ) {
-					// Show MCP content
+					// Preserve provider credentials when saving from MCP tab
+					$provider_credentials = get_option( self::OPTION_PROVIDER_CREDENTIALS, array() );
+					$current_provider = get_option( self::OPTION_CURRENT_PROVIDER, '' );
+					$jina_api_key = get_option( 'wpaisdk_jina_api_key', '' );
+					
+					foreach ( $provider_credentials as $provider_id => $api_key ) {
+						?>
+						<input type="hidden" name="<?php echo esc_attr( self::OPTION_PROVIDER_CREDENTIALS . '[' . $provider_id . ']' ); ?>" value="<?php echo esc_attr( $api_key ); ?>">
+						<?php
+					}
 					?>
-					<h2><?php esc_html_e( 'MCP Client Connections', 'wp-ai-sdk-chatbot-demo' ); ?></h2>
+					<input type="hidden" name="<?php echo esc_attr( self::OPTION_CURRENT_PROVIDER ); ?>" value="<?php echo esc_attr( $current_provider ); ?>">
+					<input type="hidden" name="wpaisdk_jina_api_key" value="<?php echo esc_attr( $jina_api_key ); ?>">
 					<?php
-					$this->render_mcp_clients_section();
-					$this->render_mcp_clients_list();
-					// Save button is included in render_mcp_clients_list() for MCP tab
-				} else {
-					// Show providers content
-					do_settings_sections( 'ai-settings' );
+				} elseif ( 'providers' === $current_tab ) {
+					// Preserve MCP client settings when saving from providers tab
+					$mcp_clients = get_option( 'wpaisdk_mcp_clients', array() );
+					
+					foreach ( $mcp_clients as $client_id => $client_config ) {
+						foreach ( $client_config as $key => $value ) {
+							$field_name = 'wpaisdk_mcp_clients[' . $client_id . '][' . $key . ']';
+							?>
+							<input type="hidden" name="<?php echo esc_attr( $field_name ); ?>" value="<?php echo esc_attr( $value ); ?>">
+							<?php
+						}
+					}
+				}
+				
+				// Show settings sections - they're already filtered by initialize_settings_screen()
+				do_settings_sections( 'ai-settings' );
+				
+				// Show save button at bottom for providers tab only
+				if ( 'mcp' !== $current_tab ) {
 					?>
 					<p class="submit">
 						<input type="submit" name="submit" id="submit" class="button button-primary" value="<?php esc_attr_e( 'Save Changes', 'wp-ai-sdk-chatbot-demo' ); ?>">
@@ -742,14 +810,6 @@ class Provider_Manager {
 					}
 				});
 				
-				// Test connection
-				document.addEventListener('click', function(e) {
-					if (e.target.classList.contains('test-mcp-connection')) {
-						const clientItem = e.target.closest('.mcp-client-item');
-						const clientId = clientItem.dataset.clientId;
-						testMcpConnection(clientId);
-					}
-				});
 				
 				// Update client title on name change
 				document.querySelectorAll('.mcp-client-name').forEach(input => {
@@ -771,54 +831,6 @@ class Provider_Manager {
 						if (!nameInput.value) {
 							title.textContent = '<?php echo esc_js( __( 'MCP Client', 'wp-ai-sdk-chatbot-demo' ) ); ?> ' + (index + 1);
 						}
-					});
-				}
-				
-				function testMcpConnection(clientId) {
-					const clientItem = document.querySelector('[data-client-id="' + clientId + '"]');
-					const resultSpan = document.getElementById('mcp-test-' + clientId + '-result');
-					resultSpan.innerHTML = '<span style="color: #666;"><?php esc_html_e( 'Testing...', 'wp-ai-sdk-chatbot-demo' ); ?></span>';
-					
-					const formData = new FormData();
-					formData.append('action', 'test_mcp_connection');
-					formData.append('client_id', clientId);
-					formData.append('nonce', '<?php echo wp_create_nonce( 'test_mcp_connection' ); ?>');
-					
-					// Get current form values
-					const nameInput = clientItem.querySelector('input[name*="[name]"]');
-					if (nameInput) {
-						formData.append('name', nameInput.value);
-					}
-					
-					const enabled = clientItem.querySelector('input[name*="[enabled]"]');
-					if (enabled && enabled.checked) {
-						formData.append('enabled', '1');
-					}
-					
-					const serverUrl = clientItem.querySelector('input[name*="[server_url]"]');
-					if (serverUrl) {
-						formData.append('server_url', serverUrl.value);
-					}
-					
-					const apiKey = clientItem.querySelector('input[name*="[api_key]"]');
-					if (apiKey) {
-						formData.append('api_key', apiKey.value);
-					}
-					
-					fetch('<?php echo admin_url( 'admin-ajax.php' ); ?>', {
-						method: 'POST',
-						body: formData
-					})
-					.then(response => response.json())
-					.then(data => {
-						if (data.success) {
-							resultSpan.innerHTML = '<span style="color: green;">✓ ' + data.data.message + '</span>';
-						} else {
-							resultSpan.innerHTML = '<span style="color: red;">✗ ' + (data.data ? data.data.message : 'Connection failed') + '</span>';
-						}
-					})
-					.catch(error => {
-						resultSpan.innerHTML = '<span style="color: red;">✗ <?php esc_html_e( 'Connection test failed', 'wp-ai-sdk-chatbot-demo' ); ?></span>';
 					});
 				}
 			})();
@@ -888,6 +900,11 @@ class Provider_Manager {
 				class="regular-text"
 			>
 			<?php
+			if ( ! empty( $args['description'] ) ) {
+				?>
+				<p class="description"><?php echo esc_html( $args['description'] ); ?></p>
+				<?php
+			}
 		}
 	}
 	

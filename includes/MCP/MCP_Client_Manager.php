@@ -11,7 +11,6 @@ namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo\MCP;
 use WP\MCP\Core\McpClient;
 use WP\MCP\Infrastructure\ErrorHandling\ErrorLogMcpErrorHandler;
 use WP\MCP\Infrastructure\Observability\NullMcpObservabilityHandler;
-use function WordPress\Abilities\wp_register_ability;
 
 /**
  * Class for managing MCP client connections.
@@ -49,8 +48,11 @@ class MCP_Client_Manager {
 			)
 		);
 		
-		// Initialize configured clients
+		// Initialize configured clients (create connections)
 		$this->initialize_configured_clients();
+		
+		// Register abilities on the correct hook
+		add_action( 'abilities_api_init', array( $this, 'register_all_client_abilities' ) );
 	}
 	
 	/**
@@ -150,14 +152,32 @@ class MCP_Client_Manager {
 			// Store client instance
 			$this->client_instances[ $client_id ] = $client;
 			
-			// Register client abilities
-			$this->register_client_abilities( $client_id, $client );
+			// Don't register abilities here - they'll be registered in register_all_client_abilities()
 			
 			return true;
 			
 		} catch ( \Throwable $e ) {
 			error_log( 'MCP Client Manager: Failed to connect client ' . $client_id . ': ' . $e->getMessage() );
 			return false;
+		}
+	}
+	
+	/**
+	 * Register all MCP client abilities with WordPress.
+	 * This is called on the abilities_api_init hook.
+	 */
+	public function register_all_client_abilities(): void {
+		error_log( 'MCP Client Manager: Registering abilities for ' . count( $this->client_instances ) . ' clients' );
+		
+		// Check if wp_register_ability function exists
+		if ( ! function_exists( '\wp_register_ability' ) ) {
+			error_log( 'MCP Client Manager: wp_register_ability function does not exist!' );
+			return;
+		}
+		
+		foreach ( $this->client_instances as $client_id => $client ) {
+			error_log( 'MCP Client Manager: Registering abilities for client: ' . $client_id );
+			$this->register_client_abilities( $client_id, $client );
 		}
 	}
 	
@@ -171,42 +191,67 @@ class MCP_Client_Manager {
 		// List available tools from the MCP server
 		$tools_response = $client->send_request( 'tools/list' );
 		
-		if ( is_wp_error( $tools_response ) || ! isset( $tools_response['result']['tools'] ) ) {
+		if ( is_wp_error( $tools_response ) ) {
+			error_log( 'MCP Client Manager: Failed to list tools for ' . $client_id . ': ' . $tools_response->get_error_message() );
 			return;
 		}
 		
-		$tools = $tools_response['result']['tools'];
+		if ( ! isset( $tools_response['tools'] ) ) {
+			error_log( 'MCP Client Manager: No tools found in response for ' . $client_id );
+			return;
+		}
+		
+		$tools = $tools_response['tools'];
+		error_log( 'MCP Client Manager: Found ' . count( $tools ) . ' tools for client ' . $client_id );
 		
 		// Register each tool as a WordPress ability
 		foreach ( $tools as $tool ) {
-			$ability_id = 'mcp_' . $client_id . '_' . $tool['name'];
+			// Ability ID must have namespace/name format
+			// Convert underscores to dashes in client_id to comply with WP Abilities API naming convention
+			$sanitized_client_id = str_replace( '_', '-', $client_id );
+			$ability_id = 'mcp-' . $sanitized_client_id . '/' . strtolower( preg_replace( '/[^a-z0-9]+/i', '-', $tool['name'] ) );
+			error_log( 'MCP Client Manager: Registering ability ' . $ability_id );
 			
-			wp_register_ability(
+			$callback = function( $params ) use ( $client, $tool ) {
+				$response = $client->send_request(
+					'tools/call',
+					array(
+						'name'      => $tool['name'],
+						'arguments' => $params,
+					)
+				);
+				
+				if ( is_wp_error( $response ) ) {
+					return $response;
+				}
+				
+				return $response['result'] ?? array();
+			};
+			
+			// Log to verify callback is callable
+			if ( ! is_callable( $callback ) ) {
+				error_log( 'MCP Client Manager: Callback is not callable for ' . $ability_id );
+				continue;
+			}
+			
+			$success = \wp_register_ability(
 				$ability_id,
 				array(
-					'label'       => $tool['description'] ?? $tool['name'],
-					'description' => 'MCP Tool: ' . ( $tool['description'] ?? 'No description' ),
-					'input_schema' => $tool['inputSchema'] ?? array(),
-					'output_schema' => array(
+					'label'            => $tool['description'] ?? $tool['name'],
+					'description'      => 'MCP Tool: ' . ( $tool['description'] ?? 'No description' ),
+					'input_schema'     => $tool['inputSchema'] ?? array(),
+					'output_schema'    => array(
 						'type' => 'object',
 					),
-					'callback' => function( $params ) use ( $client, $tool ) {
-						$response = $client->send_request(
-							'tools/call',
-							array(
-								'name'      => $tool['name'],
-								'arguments' => $params,
-							)
-						);
-						
-						if ( is_wp_error( $response ) ) {
-							return $response;
-						}
-						
-						return $response['result'] ?? array();
-					},
+					'execute_callback' => $callback,
 				)
 			);
+			
+			if ( is_wp_error( $success ) ) {
+				error_log( 'MCP Client Manager: Failed to register ability ' . $ability_id . ': ' . $success->get_error_message() );
+			} else {
+				error_log( 'MCP Client Manager: Successfully registered ability ' . $ability_id );
+			}
 		}
 	}
 	
@@ -265,7 +310,8 @@ class MCP_Client_Manager {
 				);
 			}
 			
-			$tool_count = isset( $response['result']['tools'] ) ? count( $response['result']['tools'] ) : 0;
+			// The response is already the 'result' part of the JSON-RPC response
+			$tool_count = isset( $response['tools'] ) ? count( $response['tools'] ) : 0;
 			
 			return array(
 				'success' => true,

@@ -30,6 +30,10 @@
 			// Override CSS custom properties to ensure white background
 			--color-background: white;
 			
+			// Use WordPress admin primary color for Agenttic UI primary elements
+			--color-primary: var(--wp-admin-theme-color, #2271b1);
+			--color-primary-foreground: white;
+			
 			// Ensure the embedded chat takes full height and has white background with padding
 			.Chat-module_container.Chat-module_embedded {
 				height: 100%;
@@ -218,6 +222,12 @@
 					box-shadow: none !important;
 					outline: none !important;
 				}
+			}
+			
+			// Target the chat footer to use WordPress admin primary color for buttons
+			[data-slot="chat-footer"] {
+				--color-primary: var(--wp-admin-theme-color, #2271b1);
+				--color-primary-foreground: white;
 			}
 			
 			// Reset WordPress admin input styles

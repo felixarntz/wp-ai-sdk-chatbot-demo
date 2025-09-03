@@ -86,6 +86,7 @@ class Plugin_Main {
 		// Removed Abilities_Registrar - using Abilities::register_all() instead
 
 		// Add hooks to initialize provider configuration settings and related WP Admin UI.
+		// Initialize at priority 0 to ensure MCP clients are ready before abilities_api_init
 		add_action(
 			'init',
 			function () {
@@ -98,7 +99,8 @@ class Plugin_Main {
 						$this->provider_manager->add_settings_screen();
 					}
 				);
-			}
+			},
+			0
 		);
 
 		// Initialize the Abilities API and register abilities

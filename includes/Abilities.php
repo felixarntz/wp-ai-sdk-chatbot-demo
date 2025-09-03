@@ -54,6 +54,8 @@ class Abilities {
 		self::register_generate_post_featured_image();
 		self::register_list_providers();
 		self::register_change_provider();
+		self::register_page_content_markdown();
+		self::register_configure_mcp_client();
 		
 		self::$registered = true;
 		error_log( "WP AI Chatbot: All abilities registered successfully" );
@@ -138,6 +140,16 @@ class Abilities {
 							'name'        => 'change_provider',
 							'label'       => 'Change AI Provider',
 							'description' => 'Changes the current AI provider being used by the chatbot.',
+						),
+						array(
+							'name'        => 'fetch_url_as_markdown',
+							'label'       => 'Fetch URL as Markdown',
+							'description' => 'Fetches any URL and converts its content to clean markdown format using Jina AI Reader.',
+						),
+						array(
+							'name'        => 'configure_mcp_client',
+							'label'       => 'Configure MCP Client',
+							'description' => 'Add, update, delete, list, or test MCP client connections.',
 						),
 					);
 
@@ -715,7 +727,7 @@ class Abilities {
 							$providers[] = array(
 								'id'          => $provider_id,
 								'name'        => $metadata->getName(),
-								'description' => $metadata->getDescription(),
+								'description' => $metadata->getName() . ' AI Provider', // No getDescription method available
 								'is_current'  => ( $provider_id === $current_provider_id ),
 							);
 						} catch ( \Exception $e ) {
@@ -850,6 +862,407 @@ class Abilities {
 					);
 				},
 				'permission_callback' => function () {
+					return current_user_can( 'manage_options' );
+				},
+			)
+		);
+	}
+
+	/**
+	 * Register ability to fetch URL as markdown.
+	 *
+	 * @since 0.1.0
+	 */
+	private static function register_page_content_markdown(): void {
+		// Only register if Jina API key is configured
+		$api_key = get_option( 'wpaisdk_jina_api_key' );
+		if ( empty( $api_key ) && ! defined( 'JINA_API_KEY' ) ) {
+			return;
+		}
+		
+		wp_register_ability(
+			'wp/fetch-url-as-markdown',
+			array(
+				'label'            => __( 'Fetch URL as Markdown', 'wp-ai-sdk-chatbot-demo' ),
+				'description'      => __( 'Fetches any URL and converts its content to clean markdown format using Jina AI Reader. Perfect for reading articles, documentation, or any web content.', 'wp-ai-sdk-chatbot-demo' ),
+				'input_schema'     => array(
+					'type'       => 'object',
+					'properties' => array(
+						'url' => array(
+							'type'        => 'string',
+							'format'      => 'uri',
+							'description' => __( 'The URL of the page to fetch', 'wp-ai-sdk-chatbot-demo' ),
+						),
+					),
+					'required'   => array( 'url' ),
+					'additionalProperties' => false,
+				),
+				'output_schema'    => array(
+					'type'       => 'object',
+					'properties' => array(
+						'title'      => array(
+							'type'        => 'string',
+							'description' => __( 'The page title', 'wp-ai-sdk-chatbot-demo' ),
+						),
+						'url'        => array(
+							'type'        => 'string',
+							'format'      => 'uri',
+							'description' => __( 'The original URL', 'wp-ai-sdk-chatbot-demo' ),
+						),
+						'source_url' => array(
+							'type'        => 'string',
+							'format'      => 'uri',
+							'description' => __( 'The source URL from the page', 'wp-ai-sdk-chatbot-demo' ),
+						),
+						'content'    => array(
+							'type'        => 'string',
+							'description' => __( 'The page content in markdown format', 'wp-ai-sdk-chatbot-demo' ),
+						),
+						'format'     => array(
+							'type'        => 'string',
+							'enum'        => array( 'markdown' ),
+							'description' => __( 'The content format', 'wp-ai-sdk-chatbot-demo' ),
+						),
+					),
+				),
+				'execute_callback' => function( $input ) {
+					// Validate URL
+					if ( empty( $input['url'] ) ) {
+						return new \WP_Error(
+							'missing_url',
+							__( 'URL is required', 'wp-ai-sdk-chatbot-demo' )
+						);
+					}
+
+					$url = $input['url'];
+					
+					// Validate URL format
+					if ( ! filter_var( $url, FILTER_VALIDATE_URL ) ) {
+						return new \WP_Error(
+							'invalid_url',
+							__( 'Invalid URL provided', 'wp-ai-sdk-chatbot-demo' )
+						);
+					}
+
+					// Get API key from options or environment
+					$api_key = get_option( 'wpaisdk_jina_api_key' );
+					
+					if ( empty( $api_key ) && defined( 'JINA_API_KEY' ) ) {
+						$api_key = JINA_API_KEY;
+					}
+					
+					if ( empty( $api_key ) ) {
+						return new \WP_Error(
+							'missing_api_key',
+							__( 'Jina AI API key is not configured. Please add it in the AI Settings page.', 'wp-ai-sdk-chatbot-demo' )
+						);
+					}
+
+					// Construct Jina AI Reader URL
+					$jina_url = 'https://r.jina.ai/' . $url;
+
+					// Make the request
+					$response = wp_remote_get( $jina_url, array(
+						'timeout' => 30,
+						'headers' => array(
+							'Authorization' => 'Bearer ' . $api_key,
+						),
+					) );
+
+					// Handle errors
+					if ( is_wp_error( $response ) ) {
+						return new \WP_Error(
+							'request_failed',
+							sprintf( __( 'Failed to fetch content: %s', 'wp-ai-sdk-chatbot-demo' ), $response->get_error_message() )
+						);
+					}
+
+					$response_code = wp_remote_retrieve_response_code( $response );
+					
+					if ( 200 !== $response_code ) {
+						return new \WP_Error(
+							'request_error',
+							sprintf( __( 'Request failed with status code: %d', 'wp-ai-sdk-chatbot-demo' ), $response_code )
+						);
+					}
+
+					$body = wp_remote_retrieve_body( $response );
+					
+					if ( empty( $body ) ) {
+						return new \WP_Error(
+							'empty_response',
+							__( 'Received empty response from Jina AI', 'wp-ai-sdk-chatbot-demo' )
+						);
+					}
+
+					// Parse the markdown content
+					$lines = explode( "\n", $body );
+					$title = '';
+					$content = $body;
+					$source_url = '';
+					
+					// Check if first line starts with "Title:"
+					if ( ! empty( $lines ) && 0 === strpos( $lines[0], 'Title:' ) ) {
+						$title = trim( substr( $lines[0], 6 ) );
+						array_shift( $lines );
+					}
+					
+					// Check if there's a URL Source line
+					if ( ! empty( $lines ) && 0 === strpos( $lines[0], 'URL Source:' ) ) {
+						$source_url = trim( substr( $lines[0], 11 ) );
+						array_shift( $lines );
+					}
+					
+					// Check for "Markdown Content:" header and remove it
+					if ( ! empty( $lines ) && 0 === strpos( trim( $lines[0] ), 'Markdown Content:' ) ) {
+						array_shift( $lines );
+					}
+					
+					// Rebuild content without the metadata lines
+					if ( count( $lines ) !== count( explode( "\n", $body ) ) ) {
+						$content = implode( "\n", $lines );
+					}
+
+					return array(
+						'title'      => $title,
+						'url'        => $url,
+						'source_url' => $source_url ?: $url,
+						'content'    => trim( $content ),
+						'format'     => 'markdown',
+					);
+				},
+				'permission_callback' => function( $input ) {
+					return current_user_can( 'edit_posts' );
+				},
+			)
+		);
+	}
+
+	/**
+	 * Register ability to configure MCP clients.
+	 *
+	 * @since 0.1.0
+	 */
+	private static function register_configure_mcp_client(): void {
+		wp_register_ability(
+			'wp-ai-chatbot-demo/configure-mcp-client',
+			array(
+				'label'            => __( 'Configure MCP Client', 'wp-ai-sdk-chatbot-demo' ),
+				'description'      => __( 'Add, update, delete, list, or test MCP client connections.', 'wp-ai-sdk-chatbot-demo' ),
+				'input_schema'     => array(
+					'type'       => 'object',
+					'properties' => array(
+						'action' => array(
+							'type'        => 'string',
+							'enum'        => array( 'add', 'update', 'delete', 'list', 'test' ),
+							'description' => 'The action to perform on MCP clients',
+						),
+						'client_id' => array(
+							'type'        => 'string',
+							'description' => 'The client ID (required for update, delete, test)',
+						),
+						'config' => array(
+							'type'       => 'object',
+							'properties' => array(
+								'name'       => array(
+									'type'        => 'string',
+									'description' => 'Display name for the client',
+								),
+								'server_url' => array(
+									'type'        => 'string',
+									'description' => 'MCP server URL',
+								),
+								'api_key'    => array(
+									'type'        => 'string',
+									'description' => 'API key for authentication (optional)',
+								),
+								'enabled'    => array(
+									'type'        => 'boolean',
+									'description' => 'Whether the client is enabled',
+								),
+							),
+							'description' => 'Client configuration (required for add, update)',
+						),
+					),
+					'required' => array( 'action' ),
+				),
+				'output_schema' => array(
+					'type'       => 'object',
+					'properties' => array(
+						'success' => array( 'type' => 'boolean' ),
+						'message' => array( 'type' => 'string' ),
+						'data'    => array( 'type' => 'object' ),
+					),
+				),
+				'execute_callback' => function( $args ) {
+					if ( ! current_user_can( 'manage_options' ) ) {
+						return array(
+							'success' => false,
+							'message' => 'You do not have permission to manage MCP clients.',
+						);
+					}
+
+					$action = $args['action'];
+					$mcp_clients = get_option( 'wpaisdk_mcp_clients', array() );
+					
+					if ( ! is_array( $mcp_clients ) ) {
+						$mcp_clients = array();
+					}
+
+					switch ( $action ) {
+						case 'list':
+							$clients_list = array();
+							foreach ( $mcp_clients as $id => $config ) {
+								$clients_list[] = array(
+									'client_id'  => $id,
+									'name'       => $config['name'] ?? '',
+									'server_url' => $config['server_url'] ?? '',
+									'enabled'    => ! empty( $config['enabled'] ),
+								);
+							}
+							return array(
+								'success' => true,
+								'message' => sprintf( 'Found %d MCP clients', count( $clients_list ) ),
+								'data'    => array( 'clients' => $clients_list ),
+							);
+
+						case 'add':
+							if ( empty( $args['config'] ) ) {
+								return array(
+									'success' => false,
+									'message' => 'Configuration is required for adding a client',
+								);
+							}
+							
+							$config = $args['config'];
+							if ( empty( $config['server_url'] ) ) {
+								return array(
+									'success' => false,
+									'message' => 'Server URL is required',
+								);
+							}
+							
+							// Generate a new client ID
+							$client_id = 'client_' . count( $mcp_clients );
+							while ( isset( $mcp_clients[ $client_id ] ) ) {
+								$client_id = 'client_' . ( intval( substr( $client_id, 7 ) ) + 1 );
+							}
+							
+							$mcp_clients[ $client_id ] = array(
+								'name'       => sanitize_text_field( $config['name'] ?? 'MCP Client' ),
+								'server_url' => esc_url_raw( $config['server_url'] ),
+								'api_key'    => sanitize_text_field( $config['api_key'] ?? '' ),
+								'enabled'    => ! empty( $config['enabled'] ),
+								'transport'  => 'mcp',
+							);
+							
+							update_option( 'wpaisdk_mcp_clients', $mcp_clients );
+							
+							return array(
+								'success' => true,
+								'message' => sprintf( 'MCP client "%s" added successfully', $mcp_clients[ $client_id ]['name'] ),
+								'data'    => array( 'client_id' => $client_id ),
+							);
+
+						case 'update':
+							if ( empty( $args['client_id'] ) || empty( $args['config'] ) ) {
+								return array(
+									'success' => false,
+									'message' => 'Client ID and configuration are required for updating',
+								);
+							}
+							
+							$client_id = $args['client_id'];
+							if ( ! isset( $mcp_clients[ $client_id ] ) ) {
+								return array(
+									'success' => false,
+									'message' => sprintf( 'Client "%s" not found', $client_id ),
+								);
+							}
+							
+							$config = $args['config'];
+							if ( isset( $config['name'] ) ) {
+								$mcp_clients[ $client_id ]['name'] = sanitize_text_field( $config['name'] );
+							}
+							if ( isset( $config['server_url'] ) ) {
+								$mcp_clients[ $client_id ]['server_url'] = esc_url_raw( $config['server_url'] );
+							}
+							if ( isset( $config['api_key'] ) ) {
+								$mcp_clients[ $client_id ]['api_key'] = sanitize_text_field( $config['api_key'] );
+							}
+							if ( isset( $config['enabled'] ) ) {
+								$mcp_clients[ $client_id ]['enabled'] = ! empty( $config['enabled'] );
+							}
+							
+							update_option( 'wpaisdk_mcp_clients', $mcp_clients );
+							
+							return array(
+								'success' => true,
+								'message' => sprintf( 'MCP client "%s" updated successfully', $mcp_clients[ $client_id ]['name'] ),
+								'data'    => array( 'client_id' => $client_id ),
+							);
+
+						case 'delete':
+							if ( empty( $args['client_id'] ) ) {
+								return array(
+									'success' => false,
+									'message' => 'Client ID is required for deletion',
+								);
+							}
+							
+							$client_id = $args['client_id'];
+							if ( ! isset( $mcp_clients[ $client_id ] ) ) {
+								return array(
+									'success' => false,
+									'message' => sprintf( 'Client "%s" not found', $client_id ),
+								);
+							}
+							
+							$client_name = $mcp_clients[ $client_id ]['name'];
+							unset( $mcp_clients[ $client_id ] );
+							
+							update_option( 'wpaisdk_mcp_clients', $mcp_clients );
+							
+							return array(
+								'success' => true,
+								'message' => sprintf( 'MCP client "%s" deleted successfully', $client_name ),
+								'data'    => array( 'client_id' => $client_id ),
+							);
+
+						case 'test':
+							if ( empty( $args['client_id'] ) ) {
+								return array(
+									'success' => false,
+									'message' => 'Client ID is required for testing',
+								);
+							}
+							
+							$client_id = $args['client_id'];
+							if ( ! isset( $mcp_clients[ $client_id ] ) ) {
+								return array(
+									'success' => false,
+									'message' => sprintf( 'Client "%s" not found', $client_id ),
+								);
+							}
+							
+							// Use the MCP_Client_Manager to test the connection
+							$mcp_manager = new \Felix_Arntz\WP_AI_SDK_Chatbot_Demo\MCP\MCP_Client_Manager();
+							$test_result = $mcp_manager->test_connection( $client_id, $mcp_clients[ $client_id ] );
+							
+							return array(
+								'success' => $test_result['success'],
+								'message' => $test_result['message'],
+								'data'    => array( 'client_id' => $client_id ),
+							);
+
+						default:
+							return array(
+								'success' => false,
+								'message' => sprintf( 'Invalid action: %s', $action ),
+							);
+					}
+				},
+				'permission_callback' => function() {
 					return current_user_can( 'manage_options' );
 				},
 			)
