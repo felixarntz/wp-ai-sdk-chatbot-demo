@@ -528,6 +528,7 @@ class Provider_Manager {
 			<button type="button" id="add-mcp-client" class="button button-secondary">
 				<?php esc_html_e( '+ Add MCP Client', 'wp-ai-sdk-chatbot-demo' ); ?>
 			</button>
+			<input type="submit" name="submit" class="button button-primary" value="<?php esc_attr_e( 'Save Changes', 'wp-ai-sdk-chatbot-demo' ); ?>" style="margin-left: 10px;">
 		</p>
 		
 		<template id="mcp-client-template">
@@ -684,14 +685,17 @@ class Provider_Manager {
 					<?php
 					$this->render_mcp_clients_section();
 					$this->render_mcp_clients_list();
+					// Save button is included in render_mcp_clients_list() for MCP tab
 				} else {
 					// Show providers content
 					do_settings_sections( 'ai-settings' );
+					?>
+					<p class="submit">
+						<input type="submit" name="submit" id="submit" class="button button-primary" value="<?php esc_attr_e( 'Save Changes', 'wp-ai-sdk-chatbot-demo' ); ?>">
+					</p>
+					<?php
 				}
 				?>
-				<p class="submit">
-					<input type="submit" name="submit" id="submit" class="button button-primary" value="<?php esc_attr_e( 'Save Changes', 'wp-ai-sdk-chatbot-demo' ); ?>">
-				</p>
 			</form>
 			
 			<script>
