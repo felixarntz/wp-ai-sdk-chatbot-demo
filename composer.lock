@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f5fd3152560eb42c983ba88721ae3419",
+    "content-hash": "6b3306014369a9a913e75aeb89cfc073",
     "packages": [
         {
             "name": "automattic/jetpack-autoloader",
@@ -1136,6 +1136,100 @@
             "time": "2025-08-29T04:47:50+00:00"
         },
         {
+            "name": "wordpress/mcp-adapter",
+            "version": "dev-feature/mcp-client-core",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/WordPress/mcp-adapter.git",
+                "reference": "b29fe4e46c52693d2bdb4b817cb3fea4738a7ac6"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/WordPress/mcp-adapter/zipball/b29fe4e46c52693d2bdb4b817cb3fea4738a7ac6",
+                "reference": "b29fe4e46c52693d2bdb4b817cb3fea4738a7ac6",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.4 || ^8.0",
+                "wordpress/abilities-api": "^0.1.0"
+            },
+            "require-dev": {
+                "automattic/vipwpcs": "^3.0",
+                "phpcompatibility/php-compatibility": "10.x-dev as 9.99.99",
+                "phpcompatibility/phpcompatibility-wp": "^2.1",
+                "phpstan/extension-installer": "^1.3",
+                "phpstan/php-8-stubs": "^0.4.24",
+                "phpstan/phpstan": "^2.1.22",
+                "phpstan/phpstan-deprecation-rules": "^2.0.3",
+                "phpunit/phpunit": "^9.6",
+                "slevomat/coding-standard": "^8.0",
+                "szepeviktor/phpstan-wordpress": "^2.0",
+                "wp-phpunit/wp-phpunit": "^6.5",
+                "wpackagist-plugin/plugin-check": "^1.6",
+                "yoast/phpunit-polyfills": "^4.0"
+            },
+            "type": "library",
+            "extra": {
+                "installer-paths": {
+                    "vendor/{$vendor}/{$name}/": [
+                        "wpackagist-plugin/plugin-check"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "WP\\MCP\\": "includes/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "WP\\MCP\\Tests\\": [
+                        "tests/"
+                    ]
+                }
+            },
+            "scripts": {
+                "lint:php": [
+                    "phpcs"
+                ],
+                "lint:php:fix": [
+                    "phpcbf"
+                ],
+                "lint:php:stan": [
+                    "vendor/bin/phpstan analyse --memory-limit=1G"
+                ],
+                "test": [
+                    "phpunit --strict-coverage"
+                ]
+            },
+            "license": [
+                "GPL-2.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "WordPress AI Team",
+                    "homepage": "https://make.wordpress.org/ai/"
+                }
+            ],
+            "description": "Adapter for Abilities API, letting WordPress abilities to be used as MCP tools, resources or prompts",
+            "homepage": "https://github.com/wordpress/mcp-adapter",
+            "keywords": [
+                "abilities-api",
+                "adapter",
+                "ai",
+                "api",
+                "integration",
+                "mcp",
+                "model-context-protocol",
+                "wordpress"
+            ],
+            "support": {
+                "issues": "https://github.com/wordpress/mcp-adapter/issues",
+                "source": "https://github.com/wordpress/mcp-adapter"
+            },
+            "time": "2025-09-01T00:23:31+00:00"
+        },
+        {
             "name": "wordpress/php-ai-client",
             "version": "dev-fix/empty-tool-calls-parameters",
             "dist": {
@@ -1226,6 +1320,7 @@
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
+        "wordpress/mcp-adapter": 20,
         "wordpress/php-ai-client": 20
     },
     "prefer-stable": false,

@@ -29,6 +29,7 @@
 		"guzzlehttp/guzzle": "^7.10",
 		"wordpress/abilities-api": "^0.1",
 		"wordpress/php-ai-client": "dev-fix/empty-tool-calls-parameters",
+		"wordpress/mcp-adapter": "dev-feature/mcp-client-core",
 		"php": ">=8.1"
 	},
 	"config": {

@@ -11,7 +11,6 @@ namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo\REST_Routes;
 use Exception;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Agents\Chatbot_Agent;
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Providers\Provider_Manager;
-use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Message_Normalizer;
 use WordPress\AiClient\Messages\DTO\Message;
 use WordPress\AiClient\Messages\DTO\MessagePart;
 use WordPress\AiClient\Messages\Enums\MessagePartChannelEnum;
@@ -152,21 +151,8 @@ class Chatbot_Messages_REST_Route {
 
 		$new_message = $params;
 
-		// Add the provider ID to the message.
-		$provider_id = $this->provider_manager->get_current_provider_id();
-		if ( ! empty( $provider_id ) ) {
-			$model_id = $this->provider_manager->get_preferred_model_id( $provider_id );
-			foreach ( $new_message[ Message::KEY_PARTS ] as &$part ) {
-				// This is an example where an extra channel with the metadata about the provider is added.
-				if ( MessagePartChannelEnum::METADATA !== $part[ MessagePart::KEY_CHANNEL ] ) {
-					continue;
-				}
-				$part[ MessagePart::KEY_DATA ] = array(
-					'provider' => $provider_id,
-					'model'    => $model_id,
-				);
-			}
-		}
+		// Note: Provider metadata handling removed as MessagePartChannelEnum 
+		// doesn't have a 'metadata' channel type (only 'content' and 'thought').
 
 		$messages[] = $new_message;
 
@@ -186,7 +172,7 @@ class Chatbot_Messages_REST_Route {
 			$error_message  = __( 'An error occurred while processing your request.', 'wp-ai-sdk-chatbot-demo' );
 			$result_message = array(
 				'type'                    => 'error',
-				MessageRoleEnum::MODEL    => MessageRoleEnum::model()->value,
+				Message::KEY_ROLE         => MessageRoleEnum::model()->value,
 				Message::KEY_PARTS        => array(
 					array(
 						MessagePart::KEY_CHANNEL => MessagePartChannelEnum::content()->value,
@@ -199,13 +185,7 @@ class Chatbot_Messages_REST_Route {
 
 		$messages[] = $result_message;
 
-		// Normalize all messages before storing using the Message_Normalizer
-		$normalized_messages = Message_Normalizer::normalize_all( $messages );
-		
-		// Debug: Log normalization
-		error_log( "WP AI Chatbot: Messages normalized for storage" );
-		
-		update_user_option( get_current_user_id(), 'wpaisdk_chatbot_messages', $normalized_messages );
+		update_user_option( get_current_user_id(), 'wpaisdk_chatbot_messages', $messages );
 
 		return rest_ensure_response( $result_message );
 	}
@@ -283,20 +263,14 @@ class Chatbot_Messages_REST_Route {
 	 * @return array<Message> The list of prepared Message instances.
 	 */
 	protected function prepare_message_instances( array $messages ): array {
-		// First normalize all messages to ensure consistency
-		$normalized_messages = Message_Normalizer::normalize_all( $messages );
-		
 		return array_map(
 			function ( $message ) {
 				// The 'type' property is not part of the original message schema, so we unset it here.
 				unset( $message['type'] );
 				
-				// Debug: log the normalized message structure
-				error_log( "WP AI Chatbot: Prepared message: " . wp_json_encode( $message ) );
-				
 				return Message::fromArray( $message );
 			},
-			$normalized_messages
+			$messages
 		);
 	}
 }

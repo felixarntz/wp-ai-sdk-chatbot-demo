@@ -83,14 +83,7 @@ class Plugin_Main {
 			}
 		);
 
-		// Add hooks to register abilities.
-		add_action(
-			'abilities_api_init',
-			function () {
-				$registrar = new Abilities_Registrar();
-				$registrar->register_abilities();
-			}
-		);
+		// Removed Abilities_Registrar - using Abilities::register_all() instead
 
 		// Add hooks to initialize provider configuration settings and related WP Admin UI.
 		add_action(

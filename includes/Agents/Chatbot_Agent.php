@@ -9,6 +9,7 @@
 namespace Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Agents;
 
 use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Providers\Provider_Manager;
+use Felix_Arntz\WP_AI_SDK_Chatbot_Demo\Prompt_Manager;
 use WordPress\AiClient\AiClient;
 use WordPress\AiClient\Builders\PromptBuilder;
 use WordPress\AiClient\Messages\DTO\Message;
@@ -29,6 +30,14 @@ class Chatbot_Agent extends Abstract_Agent {
 	private Provider_Manager $provider_manager;
 
 	/**
+	 * The prompt manager instance.
+	 *
+	 * @since 0.1.0
+	 * @var Prompt_Manager
+	 */
+	private Prompt_Manager $prompt_manager;
+
+	/**
 	 * Constructor.
 	 *
 	 * @since 0.1.0
@@ -40,21 +49,25 @@ class Chatbot_Agent extends Abstract_Agent {
 	 */
 	public function __construct( Provider_Manager $provider_manager, array $trajectory, array $options = array() ) {
 		$ability_names = array(
-			'wp-ai-sdk-chatbot-demo/list-capabilities',
-			'wp-ai-sdk-chatbot-demo/get-post',
-			'wp-ai-sdk-chatbot-demo/create-post-draft',
-			'wp-ai-sdk-chatbot-demo/search-posts',
-			'wp-ai-sdk-chatbot-demo/publish-post',
-			'wp-ai-sdk-chatbot-demo/set-permalink-structure',
-			'wp-ai-sdk-chatbot-demo/generate-post-featured-image',
-			'wp-ai-sdk-chatbot-demo/list-providers',
-			'wp-ai-sdk-chatbot-demo/change-provider',
+			'wp-ai-chatbot-demo/list-capabilities',
+			'wp-ai-chatbot-demo/get-post',
+			'wp-ai-chatbot-demo/create-post-draft',
+			'wp-ai-chatbot-demo/search-posts',
+			'wp-ai-chatbot-demo/publish-post',
+			'wp-ai-chatbot-demo/set-permalink-structure',
+			'wp-ai-chatbot-demo/generate-post-featured-image',
+			'wp-ai-chatbot-demo/list-providers',
+			'wp-ai-chatbot-demo/change-provider',
 		);
 
 		// Call parent constructor with ability names to use abilities API
 		parent::__construct( $ability_names, $trajectory, $options );
 
 		$this->provider_manager = $provider_manager;
+		
+		// Initialize prompt manager with the prompts directory
+		$prompts_dir = dirname( dirname( __DIR__ ) ) . '/prompts';
+		$this->prompt_manager = new Prompt_Manager( $prompts_dir );
 	}
 
 	/**
@@ -66,12 +79,20 @@ class Chatbot_Agent extends Abstract_Agent {
 	 * @return Message The response from the LLM.
 	 */
 	protected function prompt_llm( PromptBuilder $prompt_builder ): Message {
-		$client = $this->provider_manager->get_current_client();
+		$provider_id = $this->provider_manager->get_current_provider_id();
+		if ( '' !== $provider_id ) {
+			$model_id = $this->provider_manager->get_preferred_model_id( $provider_id );
+			if ( '' !== $model_id ) {
+				$prompt_builder = $prompt_builder->usingModel(
+					AiClient::defaultRegistry()->getProviderModel( $provider_id, $model_id )
+				);
+			}
+		}
 
-		// Add the instruction as the first system message.
-		$prompt_builder->withSystemInstruction( $this->get_instruction() );
-
-		return $client->prompt( $prompt_builder );
+		return $prompt_builder
+			->usingSystemInstruction( $this->get_instruction() )
+			->generateTextResult()
+			->toMessage();
 	}
 
 	/**
@@ -82,66 +103,13 @@ class Chatbot_Agent extends Abstract_Agent {
 	 * @return string The instruction.
 	 */
 	protected function get_instruction(): string {
-		$instruction = 'You are a knowledgeable WordPress assistant designed to help users manage their WordPress sites.
-
-Your primary role is to provide helpful, friendly, and expert assistance with WordPress tasks. You should:
-
-1. Be conversational and approachable while maintaining professionalism.
-2. Provide clear, concise explanations that are easy to understand.
-3. Use the available tools/abilities to perform tasks when requested.
-4. Ask clarifying questions when needed to better assist the user.
-5. Explain what you\'re doing when using tools, so users understand the process.
-6. Offer relevant suggestions and best practices when appropriate.
-
-You have access to various WordPress-specific abilities that allow you to:
-- Search for and retrieve posts
-- Create and publish content
-- Generate featured images
-- Configure site settings
-- And more
-
-Always aim to be helpful and informative while respecting the user\'s time and needs.
-
-When users ask about your capabilities, you can use the list-capabilities function to show them what you can do.
-';
-
-		$details = 'Here are examples of things you can help with:
-
-## Content Management
-- Creating new posts or pages
-- Editing existing content
-- Publishing drafts
-- Generating featured images for posts
-- Searching through existing content
-
-## Site Configuration
-- Adjusting permalink structures
-- Viewing and modifying settings
-
-## Information & Guidance
-- Explaining WordPress concepts
-- Providing best practices
-- Troubleshooting common issues
-- Offering tips for content creation
-
-Feel free to proactively suggest ways you can help based on the user\'s questions or needs.
-';
-
-		$environment = '
-
-The following miscellanous information about the chatbot environment may be helpful. NEVER reference this information, unless the user specifically asks for it.
-
-- Under the hood, your chatbot infrastructure is based on the PHP AI Client SDK, which provides access to various AI providers and models and is developed by the WordPress AI Team.
-- The current provider and model being used are configured by the site administrator.
-- In order to change which provider is used, the site administrator can update the settings within WP Admin at: ' . admin_url( 'options-general.php?page=ai' ) . '
-- The project repository for the PHP AI Client SDK can be found at: https://github.com/WordPress/php-ai-client
-- For more information about the PHP AI Client SDK, please refer to this post: https://make.wordpress.org/ai/2025/07/17/php-ai-api/
-- For your agentic tooling, you have access to a set of WordPress-specific abilities (tools), using the WordPress Abilities API.
-- The project repository for the WordPress Abilities API can be found at: https://github.com/WordPress/abilities-api
-- For more information about the WordPress Abilities API, please refer to this post: https://make.wordpress.org/ai/2025/07/17/abilities-api/
-- Today's date is ' . gmdate( 'l, F j, Y' ) . '.
-';
-
-		return $instruction . $details . $environment;
+		// Allow custom context to be passed via filter
+		$context = apply_filters( 'wp_ai_chatbot_prompt_context', array() );
+		
+		// Load the prompt from file with placeholder replacement
+		$prompt = $this->prompt_manager->get_prompt( 'chatbot-system-prompt', $context );
+		
+		// Allow the final prompt to be filtered
+		return apply_filters( 'wp_ai_chatbot_system_prompt', $prompt, $context );
 	}
 }

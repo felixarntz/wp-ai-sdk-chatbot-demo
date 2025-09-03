@@ -9,6 +9,8 @@ import { AgentUI } from '@automattic/agenttic-ui';
  */
 import apiFetch from '@wordpress/api-fetch';
 import { useState, useMemo } from '@wordpress/element';
+import { Button } from '@wordpress/components';
+import { copy, check, rotateRight, close } from '@wordpress/icons';
 
 /**
  * Internal dependencies
@@ -151,6 +153,68 @@ export default function Chatbot( props: ChatbotProps ) {
 		onClose();
 	};
 
+	const [ showCopiedFeedback, setShowCopiedFeedback ] = useState( false );
+
+	const handleCopyConversation = () => {
+		// Build conversation text with diagnostics at top
+		let conversationText = '=== Conversation ===\n\n';
+		
+		// Add diagnostics
+		conversationText += '--- Diagnostics ---\n';
+		conversationText += `URL: ${window.location.href}\n`;
+		conversationText += `Time: ${new Date().toISOString()}\n`;
+		
+		// Add config info if available
+		const configEl = document.getElementById( 'wp-ai-sdk-chatbot-demo-config' );
+		if ( configEl?.textContent ) {
+			try {
+				const config = JSON.parse( configEl.textContent );
+				if ( config.version ) {
+					conversationText += `Version: ${config.version}\n`;
+				}
+			} catch ( e ) {
+				// Ignore parse errors
+			}
+		}
+		conversationText += '\n';
+		
+		// Add message history
+		conversationText += '--- Messages ---\n\n';
+		
+		if ( messages && messages.length > 0 ) {
+			messages.forEach( ( msg ) => {
+				const role = msg.role === 'user' ? 'User' : 'Assistant';
+				
+				// Extract text content from message parts
+				let content = '[No content]';
+				if ( msg.parts && Array.isArray( msg.parts ) ) {
+					const textParts = msg.parts
+						.filter( part => part.type === 'text' )
+						.map( part => part.text )
+						.join( ' ' );
+					if ( textParts ) {
+						content = textParts;
+					}
+				}
+				
+				conversationText += `${role}: ${content}\n\n`;
+			});
+		} else {
+			conversationText += 'No messages in conversation.\n';
+		}
+		
+		// Copy to clipboard
+		navigator.clipboard.writeText( conversationText ).then( () => {
+			// Show visual feedback
+			setShowCopiedFeedback( true );
+			setTimeout( () => {
+				setShowCopiedFeedback( false );
+			}, 2000 );
+		}).catch( ( error ) => {
+			logError( error );
+		});
+	};
+
 	if ( ! messages || ! labels ) {
 		return null;
 	}
@@ -171,9 +235,21 @@ export default function Chatbot( props: ChatbotProps ) {
 						) }
 					</div>
 					<div className="wp-ai-sdk-chatbot-demo__header-actions">
-						<button
-							className="wp-ai-sdk-chatbot-demo__header-reset-button"
-							aria-label={ labels?.resetButton || 'Reset chat' }
+						<Button
+							className={ clsx(
+								'wp-ai-sdk-chatbot-demo__header-icon-button',
+								{ 'is-copied': showCopiedFeedback }
+							) }
+							label="Copy conversation to clipboard"
+							icon={ showCopiedFeedback ? check : copy }
+							onClick={ handleCopyConversation }
+							size="small"
+							variant="tertiary"
+						/>
+						<Button
+							className="wp-ai-sdk-chatbot-demo__header-icon-button"
+							label={ labels?.resetButton || 'Reset chat' }
+							icon={ rotateRight }
 							onClick={ async () => {
 								try {
 									await apiFetch( {
@@ -187,22 +263,17 @@ export default function Chatbot( props: ChatbotProps ) {
 									logError( error );
 								}
 							} }
-						>
-							<span className="wp-ai-sdk-chatbot-demo__header-reset-icon" />
-							<span className="screen-reader-text">
-								{ labels?.resetButton || 'Reset chat' }
-							</span>
-						</button>
-						<button
-							className="wp-ai-sdk-chatbot-demo__header-close-button"
-							aria-label={ labels?.closeButton || 'Close chatbot' }
+							size="small"
+							variant="tertiary"
+						/>
+						<Button
+							className="wp-ai-sdk-chatbot-demo__header-icon-button"
+							label={ labels?.closeButton || 'Close chatbot' }
+							icon={ close }
 							onClick={ handleClose }
-						>
-							<span className="wp-ai-sdk-chatbot-demo__header-close-icon" />
-							<span className="screen-reader-text">
-								{ labels?.closeButton || 'Close chatbot' }
-							</span>
-						</button>
+							size="small"
+							variant="tertiary"
+						/>
 					</div>
 				</div>
 
