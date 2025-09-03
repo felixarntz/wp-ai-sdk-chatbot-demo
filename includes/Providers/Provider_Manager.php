@@ -376,14 +376,9 @@ class Provider_Manager {
 	 * @since 0.1.0
 	 */
 	public function initialize_settings_screen(): void {
-		// Get current tab
-		$current_tab = isset( $_GET['tab'] ) ? sanitize_text_field( $_GET['tab'] ) : 'providers';
-		
-		if ( 'mcp' === $current_tab ) {
-			$this->initialize_mcp_settings();
-		} else {
-			$this->initialize_provider_settings();
-		}
+		// Always register both tabs' settings
+		$this->initialize_provider_settings();
+		$this->initialize_mcp_settings();
 	}
 	
 	/**
@@ -680,7 +675,20 @@ class Provider_Manager {
 
 			<form action="options.php" method="post">
 				<?php settings_fields( 'ai-settings' ); ?>
-				<?php do_settings_sections( 'ai-settings' ); ?>
+				<?php 
+				// Conditionally show content based on current tab
+				if ( 'mcp' === $current_tab ) {
+					// Show MCP content
+					?>
+					<h2><?php esc_html_e( 'MCP Client Connections', 'wp-ai-sdk-chatbot-demo' ); ?></h2>
+					<?php
+					$this->render_mcp_clients_section();
+					$this->render_mcp_clients_list();
+				} else {
+					// Show providers content
+					do_settings_sections( 'ai-settings' );
+				}
+				?>
 				<p class="submit">
 					<input type="submit" name="submit" id="submit" class="button button-primary" value="<?php esc_attr_e( 'Save Changes', 'wp-ai-sdk-chatbot-demo' ); ?>">
 				</p>
