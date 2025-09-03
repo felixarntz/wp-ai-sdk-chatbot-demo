@@ -212,7 +212,9 @@ class MCP_Client_Manager {
 			$ability_id = 'mcp-' . $sanitized_client_id . '/' . strtolower( preg_replace( '/[^a-z0-9]+/i', '-', $tool['name'] ) );
 			error_log( 'MCP Client Manager: Registering ability ' . $ability_id );
 			
-			$callback = function( $params ) use ( $client, $tool ) {
+			$callback = function( $params ) use ( $client, $tool, $ability_id ) {
+				error_log( 'MCP Client Manager: Executing ability ' . $ability_id . ' with params: ' . json_encode( $params ) );
+				
 				$response = $client->send_request(
 					'tools/call',
 					array(
@@ -222,10 +224,35 @@ class MCP_Client_Manager {
 				);
 				
 				if ( is_wp_error( $response ) ) {
+					error_log( 'MCP Client Manager: Error executing ' . $ability_id . ': ' . $response->get_error_message() );
 					return $response;
 				}
 				
-				return $response['result'] ?? array();
+				error_log( 'MCP Client Manager: Raw response for ' . $ability_id . ': ' . json_encode( $response ) );
+				
+				// MCP responses come in the format: { content: [ { type: "text", text: "JSON_STRING" } ] }
+				// We need to extract and parse the actual JSON from the text field
+				if ( isset( $response['content'] ) && is_array( $response['content'] ) && ! empty( $response['content'] ) ) {
+					$content = $response['content'][0] ?? null;
+					
+					if ( $content && isset( $content['type'] ) && $content['type'] === 'text' && isset( $content['text'] ) ) {
+						// Parse the JSON string in the text field
+						$parsed = json_decode( $content['text'], true );
+						
+						if ( json_last_error() === JSON_ERROR_NONE ) {
+							error_log( 'MCP Client Manager: Successfully parsed MCP response for ' . $ability_id );
+							return $parsed;
+						} else {
+							error_log( 'MCP Client Manager: Failed to parse JSON from MCP response for ' . $ability_id . ': ' . json_last_error_msg() );
+							// Return the text as-is if it's not JSON
+							return array( 'text' => $content['text'] );
+						}
+					}
+				}
+				
+				// Fallback: return the response as-is
+				error_log( 'MCP Client Manager: Returning raw response for ' . $ability_id );
+				return $response;
 			};
 			
 			// Log to verify callback is callable
