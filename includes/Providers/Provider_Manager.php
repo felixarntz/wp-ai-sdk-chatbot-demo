@@ -774,30 +774,38 @@ class Provider_Manager {
 				const addButton = document.getElementById('add-mcp-client');
 				if (addButton) {
 					addButton.addEventListener('click', function() {
-					const template = document.getElementById('mcp-client-template');
-					const container = document.getElementById('mcp-clients-container');
-					const newClientId = 'client_' + Date.now();
-					
-					// Clone template content
-					let newClient = template.content.cloneNode(true);
-					let html = newClient.querySelector('.mcp-client-item').outerHTML;
-					
-					// Replace placeholders
-					html = html.replace(/__CLIENT_ID__/g, newClientId);
-					html = html.replace(/__INDEX__/g, clientCounter);
-					
-					// Create element and append
-					const div = document.createElement('div');
-					div.innerHTML = html;
-					container.appendChild(div.firstElementChild);
-					
-					clientCounter++;
-					
-					// Update title for new client
-					const newItem = container.lastElementChild;
-					const nameInput = newItem.querySelector('.mcp-client-name');
-					nameInput.addEventListener('input', updateClientTitle);
-				});
+						const template = document.getElementById('mcp-client-template');
+						const container = document.getElementById('mcp-clients-container');
+						
+						if (!template || !container) {
+							console.error('MCP template or container not found');
+							return;
+						}
+						
+						const newClientId = 'client_' + Date.now();
+						
+						// Clone template content
+						let newClient = template.content.cloneNode(true);
+						let html = newClient.querySelector('.mcp-client-item').outerHTML;
+						
+						// Replace placeholders
+						html = html.replace(/__CLIENT_ID__/g, newClientId);
+						html = html.replace(/__INDEX__/g, clientCounter);
+						
+						// Create element and append
+						const div = document.createElement('div');
+						div.innerHTML = html;
+						container.appendChild(div.firstElementChild);
+						
+						clientCounter++;
+						
+						// Update title for new client
+						const newItem = container.lastElementChild;
+						const nameInput = newItem.querySelector('.mcp-client-name');
+						if (nameInput) {
+							nameInput.addEventListener('input', updateClientTitle);
+						}
+					});
 				}
 				
 				// Remove client
