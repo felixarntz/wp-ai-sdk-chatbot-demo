@@ -529,9 +529,11 @@ class Provider_Manager {
 			?>
 		</div>
 		
-		<button type="button" id="add-mcp-client" class="button button-secondary" style="margin-top: 10px;">
-			<?php esc_html_e( '+ Add MCP Client', 'wp-ai-sdk-chatbot-demo' ); ?>
-		</button>
+		<p>
+			<button type="button" id="add-mcp-client" class="button button-secondary">
+				<?php esc_html_e( '+ Add MCP Client', 'wp-ai-sdk-chatbot-demo' ); ?>
+			</button>
+		</p>
 		
 		<template id="mcp-client-template">
 			<?php $this->render_mcp_client_form( '__CLIENT_ID__', array(), '__INDEX__' ); ?>
@@ -679,7 +681,9 @@ class Provider_Manager {
 			<form action="options.php" method="post">
 				<?php settings_fields( 'ai-settings' ); ?>
 				<?php do_settings_sections( 'ai-settings' ); ?>
-				<?php submit_button(); ?>
+				<p class="submit">
+					<input type="submit" name="submit" id="submit" class="button button-primary" value="<?php esc_attr_e( 'Save Changes', 'wp-ai-sdk-chatbot-demo' ); ?>">
+				</p>
 			</form>
 			
 			<script>

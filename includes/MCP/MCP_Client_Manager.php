@@ -71,9 +71,9 @@ class MCP_Client_Manager {
 				continue;
 			}
 			
-			// Skip if marked for deletion or empty
+			// Skip if marked for deletion or completely empty
 			if ( ! empty( $config['delete'] ) || 
-			     ( empty( $config['name'] ) && empty( $config['server_url'] ) ) ) {
+			     ( empty( $config['name'] ) && empty( $config['server_url'] ) && empty( $config['api_key'] ) ) ) {
 				continue;
 			}
 			
