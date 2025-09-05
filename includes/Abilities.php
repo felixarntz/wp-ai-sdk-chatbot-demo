@@ -1076,6 +1076,15 @@ class Abilities {
 									'type'        => 'string',
 									'description' => 'API key for authentication (optional)',
 								),
+								'auth_type'  => array(
+									'type'        => 'string',
+									'enum'        => array( 'bearer', 'x-api-key' ),
+									'description' => 'How to send the API key to the MCP server. Default: "bearer".',
+								),
+								'api_key_header' => array(
+									'type'        => 'string',
+									'description' => 'When auth_type is "x-api-key", the custom header to use (default: "X-API-Key").',
+								),
 								'enabled'    => array(
 									'type'        => 'boolean',
 									'description' => 'Whether the client is enabled',
@@ -1154,6 +1163,9 @@ class Abilities {
 								'api_key'    => sanitize_text_field( $config['api_key'] ?? '' ),
 								'enabled'    => ! empty( $config['enabled'] ),
 								'transport'  => 'mcp',
+								'auth_type'  => in_array( $config['auth_type'] ?? 'bearer', array( 'bearer', 'x-api-key' ), true )
+									? $config['auth_type'] : 'bearer',
+								'api_key_header' => sanitize_text_field( $config['api_key_header'] ?? 'X-API-Key' ),
 							);
 							
 							update_option( 'wpaisdk_mcp_clients', $mcp_clients );
@@ -1189,6 +1201,12 @@ class Abilities {
 							}
 							if ( isset( $config['api_key'] ) ) {
 								$mcp_clients[ $client_id ]['api_key'] = sanitize_text_field( $config['api_key'] );
+							}
+							if ( isset( $config['auth_type'] ) ) {
+								$mcp_clients[ $client_id ]['auth_type'] = in_array( $config['auth_type'], array( 'bearer', 'x-api-key' ), true ) ? $config['auth_type'] : 'bearer';
+							}
+							if ( isset( $config['api_key_header'] ) ) {
+								$mcp_clients[ $client_id ]['api_key_header'] = sanitize_text_field( $config['api_key_header'] );
 							}
 							if ( isset( $config['enabled'] ) ) {
 								$mcp_clients[ $client_id ]['enabled'] = ! empty( $config['enabled'] );

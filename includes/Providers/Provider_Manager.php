@@ -559,15 +559,11 @@ class Provider_Manager {
 		</div>
 		
 		<p>
-			<button type="button" id="add-mcp-client" class="button button-secondary">
+			<button type="button" id="add-mcp-client" class="button button-secondary" onclick="addNewMCPClient()">
 				<?php esc_html_e( '+ Add MCP Client', 'wp-ai-sdk-chatbot-demo' ); ?>
 			</button>
 			<input type="submit" name="submit" class="button button-primary" value="<?php esc_attr_e( 'Save Changes', 'wp-ai-sdk-chatbot-demo' ); ?>" style="margin-left: 10px;">
 		</p>
-		
-		<template id="mcp-client-template">
-			<?php $this->render_mcp_client_form( '__CLIENT_ID__', array(), '__INDEX__' ); ?>
-		</template>
 		<?php
 	}
 	
@@ -587,7 +583,7 @@ class Provider_Manager {
 		$api_key = $config['api_key'] ?? '';
 		?>
 		<div class="mcp-client-item" data-client-id="<?php echo esc_attr( $client_id ); ?>" style="border: 1px solid #c3c4c7; padding: 15px; border-radius: 4px; margin-bottom: 20px; position: relative;">
-			<button type="button" class="remove-mcp-client" style="position: absolute; top: 10px; right: 10px; background: #dc3232; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">
+			<button type="button" class="remove-mcp-client" onclick="removeMCPClient(this)" style="position: absolute; top: 10px; right: 10px; background: #dc3232; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">
 				<?php esc_html_e( 'Remove', 'wp-ai-sdk-chatbot-demo' ); ?>
 			</button>
 			
@@ -610,6 +606,7 @@ class Provider_Manager {
 							value="<?php echo esc_attr( $name ); ?>"
 							class="regular-text mcp-client-name"
 							placeholder="<?php esc_attr_e( 'e.g., WordPress.com Domains', 'wp-ai-sdk-chatbot-demo' ); ?>"
+							onchange="updateMCPClientTitle(this)"
 						/>
 					</td>
 				</tr>
@@ -767,80 +764,160 @@ class Provider_Manager {
 			</form>
 			
 			<script>
-			document.addEventListener('DOMContentLoaded', function() {
-				let clientCounter = <?php echo count( $this->mcp_client_manager ? $this->mcp_client_manager->get_configured_clients() : array() ); ?>;
-				
-				// Add new client
-				const addButton = document.getElementById('add-mcp-client');
-				if (addButton) {
-					addButton.addEventListener('click', function() {
-						const template = document.getElementById('mcp-client-template');
-						const container = document.getElementById('mcp-clients-container');
-						
-						if (!template || !container) {
-							console.error('MCP template or container not found');
-							return;
-						}
-						
-						const newClientId = 'client_' + Date.now();
-						
-						// Clone template content
-						let newClient = template.content.cloneNode(true);
-						let html = newClient.querySelector('.mcp-client-item').outerHTML;
-						
-						// Replace placeholders
-						html = html.replace(/__CLIENT_ID__/g, newClientId);
-						html = html.replace(/__INDEX__/g, clientCounter);
-						
-						// Create element and append
-						const div = document.createElement('div');
-						div.innerHTML = html;
-						container.appendChild(div.firstElementChild);
-						
-						clientCounter++;
-						
-						// Update title for new client
-						const newItem = container.lastElementChild;
-						const nameInput = newItem.querySelector('.mcp-client-name');
-						if (nameInput) {
-							nameInput.addEventListener('input', updateClientTitle);
-						}
-					});
+			let mcpClientCounter = <?php echo count( $this->mcp_client_manager ? $this->mcp_client_manager->get_configured_clients() : array() ); ?>;
+			
+			function addNewMCPClient() {
+				const container = document.getElementById('mcp-clients-container');
+				if (!container) {
+					console.error('MCP clients container not found');
+					return;
 				}
 				
-				// Remove client
-				document.addEventListener('click', function(e) {
-					if (e.target.classList.contains('remove-mcp-client')) {
-						if (confirm('<?php esc_html_e( 'Remove this MCP client?', 'wp-ai-sdk-chatbot-demo' ); ?>')) {
-							e.target.closest('.mcp-client-item').remove();
-							updateClientNumbers();
-						}
+				const newClientId = 'client_' + Date.now();
+				const newIndex = container.children.length;
+				
+				// Create the HTML for the new client form directly
+				const newClientHTML = `
+					<div class="mcp-client-item" data-client-id="${newClientId}" style="border: 1px solid #c3c4c7; padding: 15px; border-radius: 4px; margin-bottom: 20px; position: relative;">
+						<button type="button" class="remove-mcp-client" onclick="removeMCPClient(this)" style="position: absolute; top: 10px; right: 10px; background: #dc3232; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">
+							<?php esc_html_e( 'Remove', 'wp-ai-sdk-chatbot-demo' ); ?>
+						</button>
+						
+						<h4 style="margin-top: 0;">
+							<?php echo esc_html( __( 'MCP Client', 'wp-ai-sdk-chatbot-demo' ) ); ?> ${newIndex + 1}
+						</h4>
+						
+						<table class="form-table" role="presentation" style="margin-top: 0;">
+							<tr>
+								<th scope="row">
+									<label for="mcp-${newClientId}-name">
+										<?php esc_html_e( 'Name', 'wp-ai-sdk-chatbot-demo' ); ?>
+									</label>
+								</th>
+								<td>
+									<input
+										type="text"
+										id="mcp-${newClientId}-name"
+										name="wpaisdk_mcp_clients[${newClientId}][name]"
+										value=""
+										class="regular-text mcp-client-name"
+										placeholder="<?php esc_attr_e( 'e.g., WordPress.com Domains', 'wp-ai-sdk-chatbot-demo' ); ?>"
+										onchange="updateMCPClientTitle(this)"
+									/>
+								</td>
+							</tr>
+							
+							<tr>
+								<th scope="row">
+									<label for="mcp-${newClientId}-enabled">
+										<?php esc_html_e( 'Enable', 'wp-ai-sdk-chatbot-demo' ); ?>
+									</label>
+								</th>
+								<td>
+									<input
+										type="checkbox"
+										id="mcp-${newClientId}-enabled"
+										name="wpaisdk_mcp_clients[${newClientId}][enabled]"
+										value="1"
+									/>
+								</td>
+							</tr>
+							
+							<tr>
+								<th scope="row">
+									<label for="mcp-${newClientId}-server-url">
+										<?php esc_html_e( 'Server URL', 'wp-ai-sdk-chatbot-demo' ); ?>
+									</label>
+								</th>
+								<td>
+									<input
+										type="url"
+										id="mcp-${newClientId}-server-url"
+										name="wpaisdk_mcp_clients[${newClientId}][server_url]"
+										value=""
+										class="regular-text"
+										placeholder="https://example.com/mcp"
+										required
+									/>
+								</td>
+							</tr>
+							
+							<tr>
+								<th scope="row">
+									<label for="mcp-${newClientId}-api-key">
+										<?php esc_html_e( 'API Key (optional)', 'wp-ai-sdk-chatbot-demo' ); ?>
+									</label>
+								</th>
+								<td>
+									<input
+										type="password"
+										id="mcp-${newClientId}-api-key"
+										name="wpaisdk_mcp_clients[${newClientId}][api_key]"
+										value=""
+										class="regular-text"
+										placeholder="<?php esc_attr_e( 'Enter API key if required', 'wp-ai-sdk-chatbot-demo' ); ?>"
+									/>
+								</td>
+							</tr>
+							
+							<tr>
+								<th scope="row">
+									<label>
+										<?php esc_html_e( 'Connection Status', 'wp-ai-sdk-chatbot-demo' ); ?>
+									</label>
+								</th>
+								<td>
+									<span style="color: gray;"><?php esc_html_e( 'Not configured', 'wp-ai-sdk-chatbot-demo' ); ?></span>
+								</td>
+							</tr>
+						</table>
+					</div>
+				`;
+				
+				// Create a temporary div to hold the HTML
+				const tempDiv = document.createElement('div');
+				tempDiv.innerHTML = newClientHTML.trim();
+				
+				// Append the new client form to the container
+				container.appendChild(tempDiv.firstChild);
+				
+				mcpClientCounter++;
+				updateMCPClientNumbers();
+			}
+			
+			function removeMCPClient(button) {
+				if (confirm('<?php echo esc_js( __( 'Remove this MCP client?', 'wp-ai-sdk-chatbot-demo' ) ); ?>')) {
+					button.closest('.mcp-client-item').remove();
+					updateMCPClientNumbers();
+				}
+			}
+			
+			function updateMCPClientTitle(input) {
+				const clientItem = input.closest('.mcp-client-item');
+				const title = clientItem.querySelector('h4');
+				const name = input.value;
+				const index = Array.from(clientItem.parentNode.children).indexOf(clientItem);
+				title.textContent = name || '<?php echo esc_js( __( 'MCP Client', 'wp-ai-sdk-chatbot-demo' ) ); ?> ' + (index + 1);
+			}
+			
+			function updateMCPClientNumbers() {
+				const items = document.querySelectorAll('.mcp-client-item');
+				items.forEach((item, index) => {
+					const title = item.querySelector('h4');
+					const nameInput = item.querySelector('.mcp-client-name');
+					if (!nameInput.value) {
+						title.textContent = '<?php echo esc_js( __( 'MCP Client', 'wp-ai-sdk-chatbot-demo' ) ); ?> ' + (index + 1);
 					}
 				});
-				
-				
-				// Update client title on name change
+			}
+			
+			// Initialize existing client name change handlers
+			document.addEventListener('DOMContentLoaded', function() {
 				document.querySelectorAll('.mcp-client-name').forEach(input => {
-					input.addEventListener('input', updateClientTitle);
-				});
-				
-				function updateClientTitle(e) {
-					const clientItem = e.target.closest('.mcp-client-item');
-					const title = clientItem.querySelector('h4');
-					const name = e.target.value;
-					const index = Array.from(clientItem.parentNode.children).indexOf(clientItem);
-					title.textContent = name || '<?php echo esc_js( __( 'MCP Client', 'wp-ai-sdk-chatbot-demo' ) ); ?> ' + (index + 1);
-				}
-				
-				function updateClientNumbers() {
-					document.querySelectorAll('.mcp-client-item').forEach((item, index) => {
-						const title = item.querySelector('h4');
-						const nameInput = item.querySelector('.mcp-client-name');
-						if (!nameInput.value) {
-							title.textContent = '<?php echo esc_js( __( 'MCP Client', 'wp-ai-sdk-chatbot-demo' ) ); ?> ' + (index + 1);
-						}
+					input.addEventListener('change', function() {
+						updateMCPClientTitle(this);
 					});
-				}
+				});
 			});
 			</script>
 		</div>

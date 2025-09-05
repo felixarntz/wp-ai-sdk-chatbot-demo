@@ -85,6 +85,10 @@ class MCP_Client_Manager {
 				'server_url' => isset( $config['server_url'] ) ? esc_url_raw( $config['server_url'] ) : '',
 				'api_key'    => isset( $config['api_key'] ) ? sanitize_text_field( $config['api_key'] ) : '',
 				'transport'  => isset( $config['transport'] ) ? sanitize_text_field( $config['transport'] ) : 'mcp',
+				'auth_type'  => in_array( $config['auth_type'] ?? 'bearer', array( 'bearer', 'x-api-key' ), true )
+								? $config['auth_type'] : 'bearer',
+				'api_key_header' => isset( $config['api_key_header'] )
+								? sanitize_text_field( $config['api_key_header'] ) : 'X-API-Key',
 			);
 		}
 		
@@ -118,6 +122,9 @@ class MCP_Client_Manager {
 	 * @return bool True if connection successful, false otherwise.
 	 */
 	public function connect_client( string $client_id, array $config ): bool {
+		$start_time = microtime( true );
+		error_log( 'MCP Client Manager: Starting connection for ' . $client_id );
+		
 		try {
 			// Get server URL from config
 			$server_url = ! empty( $config['server_url'] ) ? $config['server_url'] : '';
@@ -128,16 +135,25 @@ class MCP_Client_Manager {
 			
 			// Prepare client configuration
 			$client_config = array(
-				'timeout'    => 30,
+				'timeout'    => 8,   // Reduced for faster response
 				'ssl_verify' => true,
 			);
 			
 			// Add authentication if provided
 			if ( ! empty( $config['api_key'] ) ) {
-				$client_config['auth'] = array(
-					'type' => 'api_key',
-					'key'  => $config['api_key'],
-				);
+				$auth_type = $config['auth_type'] ?? 'bearer';
+				if ( 'x-api-key' === $auth_type ) {
+					$client_config['auth'] = array(
+						'type'   => 'api_key_header',
+						'header' => $config['api_key_header'] ?? 'X-API-Key',
+						'token'  => $config['api_key'],
+					);
+				} else {
+					$client_config['auth'] = array(
+						'type'  => 'bearer',
+						'token' => $config['api_key'],
+					);
+				}
 			}
 			
 			// Create client instance
@@ -153,6 +169,9 @@ class MCP_Client_Manager {
 			$this->client_instances[ $client_id ] = $client;
 			
 			// Don't register abilities here - they'll be registered in register_all_client_abilities()
+			
+			$duration = ( microtime( true ) - $start_time ) * 1000;
+			error_log( 'MCP Client Manager: Connected to ' . $client_id . ' in ' . round( $duration, 2 ) . 'ms' );
 			
 			return true;
 			
@@ -188,8 +207,11 @@ class MCP_Client_Manager {
 	 * @param McpClient $client    MCP client instance.
 	 */
 	protected function register_client_abilities( string $client_id, McpClient $client ): void {
+		$start_time = microtime( true );
+		error_log( 'MCP Client Manager: Starting ability registration for ' . $client_id );
+		
 		// List available tools from the MCP server
-		$tools_response = $client->send_request( 'tools/list' );
+		$tools_response = $client->send_request( 'tools/list', array() );
 		
 		if ( is_wp_error( $tools_response ) ) {
 			error_log( 'MCP Client Manager: Failed to list tools for ' . $client_id . ': ' . $tools_response->get_error_message() );
@@ -280,6 +302,9 @@ class MCP_Client_Manager {
 				error_log( 'MCP Client Manager: Successfully registered ability ' . $ability_id );
 			}
 		}
+		
+		$duration = ( microtime( true ) - $start_time ) * 1000;
+		error_log( 'MCP Client Manager: Completed ability registration for ' . $client_id . ' in ' . round( $duration, 2 ) . 'ms' );
 	}
 	
 	/**
@@ -303,16 +328,25 @@ class MCP_Client_Manager {
 			
 			// Prepare client configuration
 			$client_config = array(
-				'timeout'    => 10,
+				'timeout'    => 8,   // Reduced for faster response
 				'ssl_verify' => true,
 			);
 			
 			// Add authentication if provided
 			if ( ! empty( $config['api_key'] ) ) {
-				$client_config['auth'] = array(
-					'type' => 'api_key',
-					'key'  => $config['api_key'],
-				);
+				$auth_type = $config['auth_type'] ?? 'bearer';
+				if ( 'x-api-key' === $auth_type ) {
+					$client_config['auth'] = array(
+						'type'   => 'api_key_header',
+						'header' => $config['api_key_header'] ?? 'X-API-Key',
+						'token'  => $config['api_key'],
+					);
+				} else {
+					$client_config['auth'] = array(
+						'type'  => 'bearer',
+						'token' => $config['api_key'],
+					);
+				}
 			}
 			
 			// Create temporary client instance
@@ -325,7 +359,7 @@ class MCP_Client_Manager {
 			);
 			
 			// Try to list tools to verify connection
-			$response = $client->send_request( 'tools/list' );
+			$response = $client->send_request( 'tools/list', array() );
 			
 			if ( is_wp_error( $response ) ) {
 				return array(

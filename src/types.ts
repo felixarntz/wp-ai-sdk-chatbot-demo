@@ -2,10 +2,17 @@
  * Types for the chatbot itself.
  */
 
+export type CurrentUser = {
+	displayName: string;
+	email: string;
+	id: number;
+};
+
 export type ServerChatbotConfig = {
 	messagesRoute: string;
 	currentProviderMetadata: ProviderMetadata;
 	currentModelMetadata: ModelMetadata;
+	currentUser: CurrentUser;
 };
 
 export type ChatbotConfig = {

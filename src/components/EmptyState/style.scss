@@ -1,0 +1,27 @@
+.wp-ai-sdk-chatbot-demo__empty-state {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	min-height: 300px;
+	padding: 2rem;
+	text-align: center;
+}
+
+.wp-ai-sdk-chatbot-demo__empty-state-content {
+	max-width: 400px;
+}
+
+.wp-ai-sdk-chatbot-demo__empty-state-title {
+	margin: 0 0 1rem;
+	font-size: 1.5rem;
+	font-weight: 600;
+	color: #1e1e1e;
+}
+
+.wp-ai-sdk-chatbot-demo__empty-state-message {
+	margin: 0;
+	font-size: 1rem;
+	line-height: 1.5;
+	color: #757575;
+}

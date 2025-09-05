@@ -19,6 +19,7 @@ import { useChatbotConfig } from '../../config';
 import './style.scss';
 import {
 	ChatbotMessage as ChatbotMessageType,
+	CurrentUser,
 } from '../../types';
 import logError from '../../utils/log-error';
 import { 
@@ -26,6 +27,7 @@ import {
 	createUserMessage,
 	type AgentticMessage 
 } from '../../utils/message-transformer';
+import EmptyState from '../EmptyState';
 
 type ChatbotProps = {
 	/**
@@ -50,6 +52,10 @@ type ChatbotProps = {
 	 * Class name to use on the chatbot container.
 	 */
 	className?: string;
+	/**
+	 * The current user information.
+	 */
+	currentUser: CurrentUser;
 };
 
 /**
@@ -61,7 +67,7 @@ type ChatbotProps = {
  * @returns The component to be rendered.
  */
 export default function Chatbot( props: ChatbotProps ) {
-	const { messagesRoute, messages, onUpdateMessages, onClose, className } =
+	const { messagesRoute, messages, onUpdateMessages, onClose, className, currentUser } =
 		props;
 
 	const labels = useChatbotConfig( 'labels' );
@@ -285,6 +291,7 @@ export default function Chatbot( props: ChatbotProps ) {
 						isProcessing={ loading }
 						variant="embedded"
 						placeholder={ labels.inputPlaceholder || 'Type your message...' }
+						emptyView={ <EmptyState userName={ currentUser.displayName } /> }
 					/>
 				</div>
 			</div>

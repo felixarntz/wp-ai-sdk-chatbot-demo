@@ -219,10 +219,17 @@ class Plugin_Main {
 							}
 						}
 						
+						$current_user = wp_get_current_user();
+						
 						$script_config = array(
 							'messagesRoute'           => 'wpaisdk-chatbot/v1/messages',
 							'currentProviderMetadata' => $provider_metadata,
 							'currentModelMetadata'    => $model_metadata,
+							'currentUser'             => array(
+								'displayName' => $current_user->display_name,
+								'email'       => $current_user->user_email,
+								'id'          => $current_user->ID,
+							),
 						);
 
 						$manifest = require plugin_dir_path( $this->main_file ) . 'build/index.asset.php';

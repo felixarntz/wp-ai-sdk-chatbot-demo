@@ -101,6 +101,7 @@ export default function ChatbotApp( props: ChatbotAppProps ) {
 	const messagesRoute = serverChatbotConfig.messagesRoute;
 	const providerMetadata = serverChatbotConfig.currentProviderMetadata;
 	const modelMetadata = serverChatbotConfig.currentModelMetadata;
+	const currentUser = serverChatbotConfig.currentUser;
 
 	const chatbotRef = useRef< HTMLDivElement | null >( null );
 	const toggleButtonRef = useRef< HTMLButtonElement | null >( null );
@@ -179,6 +180,7 @@ export default function ChatbotApp( props: ChatbotAppProps ) {
 							messages={ messages }
 							onUpdateMessages={ setMessages }
 							onClose={ toggleVisibility }
+							currentUser={ currentUser }
 						/>
 					</ChatbotConfigProvider>
 				) }
