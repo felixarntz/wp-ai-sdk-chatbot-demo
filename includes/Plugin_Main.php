@@ -93,6 +93,53 @@ class Plugin_Main {
 				$this->provider_manager->initialize_provider_credentials();
 				$this->provider_manager->initialize_current_provider();
 
+				// Register user meta for chatbot UI size and position
+				register_meta(
+					'user',
+					'chatbot_size',
+					array(
+						'type'              => 'object',
+						'description'       => 'Chatbot UI size settings',
+						'single'            => true,
+						'show_in_rest'      => array(
+							'schema' => array(
+								'type'       => 'object',
+								'properties' => array(
+									'width'  => array( 'type' => 'number' ),
+									'height' => array( 'type' => 'number' ),
+								),
+							),
+						),
+						'auth_callback'     => function() {
+							return current_user_can( 'wpaisdk_access_chatbot' );
+						},
+						'sanitize_callback' => array( $this, 'sanitize_chatbot_size' ),
+					)
+				);
+
+				register_meta(
+					'user',
+					'chatbot_position',
+					array(
+						'type'              => 'object',
+						'description'       => 'Chatbot UI position settings',
+						'single'            => true,
+						'show_in_rest'      => array(
+							'schema' => array(
+								'type'       => 'object',
+								'properties' => array(
+									'bottom' => array( 'type' => 'number' ),
+									'right'  => array( 'type' => 'number' ),
+								),
+							),
+						),
+						'auth_callback'     => function() {
+							return current_user_can( 'wpaisdk_access_chatbot' );
+						},
+						'sanitize_callback' => array( $this, 'sanitize_chatbot_position' ),
+					)
+				);
+
 				add_action(
 					'admin_menu',
 					function () {
@@ -156,7 +203,7 @@ class Plugin_Main {
 
 		// Check providers and display admin notices for any issues
 		add_action(
-			'admin_init', 
+			'admin_init',
 			function () {
 				// Always check providers to display notices about invalid keys
 				try {
@@ -193,17 +240,17 @@ class Plugin_Main {
 					'admin_enqueue_scripts',
 					function () {
 						$current_provider_id = $this->provider_manager->get_current_provider_id();
-						
+
 						// Try to get provider and model metadata, but handle errors gracefully
 						$provider_metadata = null;
 						$model_metadata = null;
-						
+
 						try {
 							$provider_metadata = $this->provider_manager->get_provider_metadata( $current_provider_id );
 						} catch ( \Exception $e ) {
 							error_log( 'WP AI SDK: Failed to get provider metadata: ' . $e->getMessage() );
 						}
-						
+
 						try {
 							$model_metadata = $this->provider_manager->get_model_metadata(
 								$current_provider_id,
@@ -212,15 +259,15 @@ class Plugin_Main {
 						} catch ( \Exception $e ) {
 							error_log( 'WP AI SDK: Failed to get model metadata: ' . $e->getMessage() );
 							// Track this as an invalid provider for admin notice
-							if ( strpos( $e->getMessage(), 'Incorrect API key' ) !== false || 
+							if ( strpos( $e->getMessage(), 'Incorrect API key' ) !== false ||
 							     strpos( $e->getMessage(), '401' ) !== false ) {
 								// Access the invalid_providers array to show notice
 								$this->provider_manager->track_invalid_provider( $current_provider_id, 'Invalid API key' );
 							}
 						}
-						
+
 						$current_user = wp_get_current_user();
-						
+
 						$script_config = array(
 							'messagesRoute'           => 'wpaisdk-chatbot/v1/messages',
 							'currentProviderMetadata' => $provider_metadata,
@@ -328,6 +375,58 @@ class Plugin_Main {
 			},
 			5
 		);
+	}
+
+	/**
+	 * Sanitize chatbot size settings.
+	 *
+	 * @since 0.1.0
+	 *
+	 * @param mixed $value The value to sanitize.
+	 * @return array|null Sanitized size settings or null if invalid.
+	 */
+	public function sanitize_chatbot_size( $value ) {
+		if ( ! is_array( $value ) ) {
+			return null;
+		}
+
+		$sanitized = array();
+
+		if ( isset( $value['width'] ) && is_numeric( $value['width'] ) ) {
+			$sanitized['width'] = max( 320, min( 1200, (int) $value['width'] ) );
+		}
+
+		if ( isset( $value['height'] ) && is_numeric( $value['height'] ) ) {
+			$sanitized['height'] = max( 400, min( 1000, (int) $value['height'] ) );
+		}
+
+		return empty( $sanitized ) ? null : $sanitized;
+	}
+
+	/**
+	 * Sanitize chatbot position settings.
+	 *
+	 * @since 0.1.0
+	 *
+	 * @param mixed $value The value to sanitize.
+	 * @return array|null Sanitized position settings or null if invalid.
+	 */
+	public function sanitize_chatbot_position( $value ) {
+		if ( ! is_array( $value ) ) {
+			return null;
+		}
+
+		$sanitized = array();
+
+		if ( isset( $value['bottom'] ) && is_numeric( $value['bottom'] ) ) {
+			$sanitized['bottom'] = max( 20, (int) $value['bottom'] );
+		}
+
+		if ( isset( $value['right'] ) && is_numeric( $value['right'] ) ) {
+			$sanitized['right'] = max( 20, (int) $value['right'] );
+		}
+
+		return empty( $sanitized ) ? null : $sanitized;
 	}
 
 }
