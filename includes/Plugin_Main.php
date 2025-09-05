@@ -93,53 +93,6 @@ class Plugin_Main {
 				$this->provider_manager->initialize_provider_credentials();
 				$this->provider_manager->initialize_current_provider();
 
-				// Register user meta for chatbot UI size and position
-				register_meta(
-					'user',
-					'chatbot_size',
-					array(
-						'type'              => 'object',
-						'description'       => 'Chatbot UI size settings',
-						'single'            => true,
-						'show_in_rest'      => array(
-							'schema' => array(
-								'type'       => 'object',
-								'properties' => array(
-									'width'  => array( 'type' => 'number' ),
-									'height' => array( 'type' => 'number' ),
-								),
-							),
-						),
-						'auth_callback'     => function() {
-							return current_user_can( 'wpaisdk_access_chatbot' );
-						},
-						'sanitize_callback' => array( $this, 'sanitize_chatbot_size' ),
-					)
-				);
-
-				register_meta(
-					'user',
-					'chatbot_position',
-					array(
-						'type'              => 'object',
-						'description'       => 'Chatbot UI position settings',
-						'single'            => true,
-						'show_in_rest'      => array(
-							'schema' => array(
-								'type'       => 'object',
-								'properties' => array(
-									'bottom' => array( 'type' => 'number' ),
-									'right'  => array( 'type' => 'number' ),
-								),
-							),
-						),
-						'auth_callback'     => function() {
-							return current_user_can( 'wpaisdk_access_chatbot' );
-						},
-						'sanitize_callback' => array( $this, 'sanitize_chatbot_position' ),
-					)
-				);
-
 				add_action(
 					'admin_menu',
 					function () {
@@ -375,58 +328,6 @@ class Plugin_Main {
 			},
 			5
 		);
-	}
-
-	/**
-	 * Sanitize chatbot size settings.
-	 *
-	 * @since 0.1.0
-	 *
-	 * @param mixed $value The value to sanitize.
-	 * @return array|null Sanitized size settings or null if invalid.
-	 */
-	public function sanitize_chatbot_size( $value ) {
-		if ( ! is_array( $value ) ) {
-			return null;
-		}
-
-		$sanitized = array();
-
-		if ( isset( $value['width'] ) && is_numeric( $value['width'] ) ) {
-			$sanitized['width'] = max( 320, min( 1200, (int) $value['width'] ) );
-		}
-
-		if ( isset( $value['height'] ) && is_numeric( $value['height'] ) ) {
-			$sanitized['height'] = max( 400, min( 1000, (int) $value['height'] ) );
-		}
-
-		return empty( $sanitized ) ? null : $sanitized;
-	}
-
-	/**
-	 * Sanitize chatbot position settings.
-	 *
-	 * @since 0.1.0
-	 *
-	 * @param mixed $value The value to sanitize.
-	 * @return array|null Sanitized position settings or null if invalid.
-	 */
-	public function sanitize_chatbot_position( $value ) {
-		if ( ! is_array( $value ) ) {
-			return null;
-		}
-
-		$sanitized = array();
-
-		if ( isset( $value['bottom'] ) && is_numeric( $value['bottom'] ) ) {
-			$sanitized['bottom'] = max( 20, (int) $value['bottom'] );
-		}
-
-		if ( isset( $value['right'] ) && is_numeric( $value['right'] ) ) {
-			$sanitized['right'] = max( 20, (int) $value['right'] );
-		}
-
-		return empty( $sanitized ) ? null : $sanitized;
 	}
 
 }

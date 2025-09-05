@@ -17,7 +17,6 @@ import { ESCAPE } from "@wordpress/keycodes";
  * Internal dependencies
  */
 import Chatbot from "../Chatbot";
-import ResizableContainer from "../ResizableContainer";
 import { ChatbotConfigProvider } from "../../config";
 import "./style.scss";
 import type {
@@ -160,24 +159,24 @@ export default function ChatbotApp(props: ChatbotAppProps) {
 
   return (
     <>
-      {isVisible && (
-        <ResizableContainer
-          currentUserId={currentUser.id}
-          className="wp-ai-sdk-chatbot-demo-container"
-        >
-          <div id="wp-ai-sdk-chatbot-demo-container" ref={chatbotRef}>
-            <ChatbotConfigProvider config={config}>
-              <Chatbot
-                messagesRoute={messagesRoute}
-                messages={messages}
-                onUpdateMessages={setMessages}
-                onClose={toggleVisibility}
-                currentUser={currentUser}
-              />
-            </ChatbotConfigProvider>
-          </div>
-        </ResizableContainer>
-      )}
+      <div
+        id="wp-ai-sdk-chatbot-demo-container"
+        className="wp-ai-sdk-chatbot-demo-container"
+        hidden={!isVisible}
+        ref={chatbotRef}
+      >
+        {isVisible && (
+          <ChatbotConfigProvider config={config}>
+            <Chatbot
+              messagesRoute={messagesRoute}
+              messages={messages}
+              onUpdateMessages={setMessages}
+              onClose={toggleVisibility}
+              currentUser={currentUser}
+            />
+          </ChatbotConfigProvider>
+        )}
+      </div>
       <Button
         variant="primary"
         onClick={toggleVisibility}

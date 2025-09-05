@@ -1,19 +1,22 @@
-// Styles for the inner chatbot container
-#wp-ai-sdk-chatbot-demo-container {
-	width: 100%;
-	height: 100%;
-	display: flex;
-	flex-direction: column;
+.wp-ai-sdk-chatbot-demo-container {
+	position: fixed;
+	bottom: 2rem;
+	right: 2rem;
+	z-index: 1000;
+
+	@media (min-width: 782px) {
+
+		.wp-ai-sdk-chatbot-demo__container {
+			width: 400px;
+		}
+
+		.wp-ai-sdk-chatbot-demo__message--assistant {
+			width: 309.5px;
+		}
+	}
 
 	.wp-ai-sdk-chatbot-demo__input {
 		margin: 0;
-	}
-
-	// Ensure the chatbot fills the available space
-	.wp-ai-sdk-chatbot-demo__container {
-		height: 100%;
-		display: flex;
-		flex-direction: column;
 	}
 }
 
